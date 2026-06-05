@@ -69,11 +69,14 @@ void SYS_Init(void)
     PORT1_Init();                       //P1口初始化
     PORT2_Init();                       //P2口初始化
     PORT3_Init();                       //P3口初始化
+    TIMER0_Init();                      //定时器0初始化
     I2C_Init();                         //I2C初始化
 
     //<<AICUBE_USER_INITIAL_CODE_BEGIN>>
     // 在此添加用户初始化代码  
     //<<AICUBE_USER_INITIAL_CODE_END>>
+
+    EnableGlobalInt();                  //使能全局中断
 }
 
 ////////////////////////////////////////
