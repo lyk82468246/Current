@@ -116,7 +116,7 @@
 	<PORT1>
 		<PeriEnable>1</PeriEnable>
 		<IntPriority>0</IntPriority>
-		<PortMD_0>0</PortMD_0>
+		<PortMD_0>2</PortMD_0>
 		<PortBP_0>1</PortBP_0>
 		<PortPU_0>0</PortPU_0>
 		<PortPD_0>0</PortPD_0>
@@ -935,8 +935,8 @@
 		<IntPriority>0</IntPriority>
 	</EXTI4>
 	<ADC>
-		<PeriEnable>0</PeriEnable>
-		<ADCChannels>0</ADCChannels>
+		<PeriEnable>1</PeriEnable>
+		<ADCChannels>1</ADCChannels>
 		<ClockDivider>0</ClockDivider>
 		<ResultAlign>1</ResultAlign>
 		<SetupTiming>0</SetupTiming>
@@ -944,7 +944,7 @@
 		<SampleTiming>9</SampleTiming>
 		<ETRMode>0</ETRMode>
 		<ETRPort>-1</ETRPort>
-		<RepeatConvert>0</RepeatConvert>
+		<RepeatConvert>4</RepeatConvert>
 		<IntPriority>0</IntPriority>
 		<EnablePWMTrig>0</EnablePWMTrig>
 		<EnableDMA>0</EnableDMA>
@@ -1501,6 +1501,7 @@
 		<Pin17Map>255</Pin17Map>
 		<Pin29Map>255</Pin29Map>
 		<Pin41Map>255</Pin41Map>
+		<Pin43Map>1</Pin43Map>
 		<Pin47Map>4</Pin47Map>
 	</PINMAP>
 	<PINALIAS></PINALIAS>

@@ -41,6 +41,7 @@
 
 #include "port.h"
 #include "timer.h"
+#include "adc.h"
 #include "i2c.h"
 
 void SYS_Init(void);
