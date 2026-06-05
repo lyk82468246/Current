@@ -122,6 +122,88 @@ void PORT3_Init(void)
 
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_BEGIN>>
 // 在此添加用户函数实现代码  
+volatile float g_set_current_A = 0.0f;
+volatile float g_actual_current_A = 0.0f;
+volatile uint8_t g_seg_display_buf[SEG_DISPLAY_DIGITS] = {0};
+volatile uint8_t g_seg_scan_pos = 0;
+
+#define SEG_DP_MASK             0x80
+#define SEG_BLANK_CODE          0x00
+
+static uint8_t code SEG_DIGIT_CODE[10] =
+{
+    0x3f,   // 0
+    0x06,   // 1
+    0x5b,   // 2
+    0x4f,   // 3
+    0x66,   // 4
+    0x6d,   // 5
+    0x7d,   // 6
+    0x07,   // 7
+    0x7f,   // 8
+    0x6f    // 9
+};
+
+static void SEG_SelectDigit(uint8_t pos)
+{
+    pos &= 0x07;
+
+    DA = (pos & 0x01) ? 1 : 0;
+    DB = (pos & 0x02) ? 1 : 0;
+    DC = (pos & 0x04) ? 1 : 0;
+}
+
+static void SEG_FormatCurrentToBuf(float value, volatile uint8_t *buf)
+{
+    uint16_t display_value;
+
+    if (value < 0.0f)
+    {
+        value = 0.0f;
+    }
+
+    display_value = (uint16_t)(value * 1000.0f + 0.5f);
+    if (display_value > 9999)
+    {
+        display_value = 9999;
+    }
+
+    buf[0] = SEG_DIGIT_CODE[display_value / 1000] | SEG_DP_MASK;
+    buf[1] = SEG_DIGIT_CODE[(display_value / 100) % 10];
+    buf[2] = SEG_DIGIT_CODE[(display_value / 10) % 10];
+    buf[3] = SEG_DIGIT_CODE[display_value % 10];
+}
+
+void SEG_UpdateMemory(uint8_t idx, float value)
+{
+    if (idx == SEG_GROUP_SET_CURRENT)
+    {
+        g_set_current_A = value;
+        SEG_FormatCurrentToBuf(value, &g_seg_display_buf[0]);
+    }
+    else if (idx == SEG_GROUP_ACTUAL_CURRENT)
+    {
+        g_actual_current_A = value;
+        SEG_FormatCurrentToBuf(value, &g_seg_display_buf[4]);
+    }
+}
+
+void SEG_ScanNext(void)
+{
+    uint8_t physical_pos;
+
+    physical_pos = (uint8_t)(7u - g_seg_scan_pos);
+
+    P0 = SEG_BLANK_CODE;
+    SEG_SelectDigit(physical_pos);
+    P0 = g_seg_display_buf[g_seg_scan_pos];
+
+    g_seg_scan_pos++;
+    if (g_seg_scan_pos >= SEG_DISPLAY_DIGITS)
+    {
+        g_seg_scan_pos = 0;
+    }
+}
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>
 
 

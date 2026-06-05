@@ -58,7 +58,8 @@ void TIMER0_Init(void)
 void TIMER0_ISR(void) interrupt TMR0_VECTOR
 {
     //<<AICUBE_USER_TIMER0_ISR_CODE1_BEGIN>>
-    // 在此添加中断函数用户代码  
+    // 在此添加中断函数用户代码
+    SEG_ScanNext();  
     //<<AICUBE_USER_TIMER0_ISR_CODE1_END>>
 }
 

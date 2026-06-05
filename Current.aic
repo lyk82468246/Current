@@ -663,10 +663,10 @@
 		<TimerCT>0</TimerCT>
 		<TimerMode>0</TimerMode>
 		<TimerAction>0</TimerAction>
-		<TimerInterval>100</TimerInterval>
-		<TimerUnit>0</TimerUnit>
-		<TimerReload>1</TimerReload>
-		<ClockPrescale>0</ClockPrescale>
+		<TimerInterval>10</TimerInterval>
+		<TimerUnit>1</TimerUnit>
+		<TimerReload>16667</TimerReload>
+		<ClockPrescale>1</ClockPrescale>
 		<UartBaudrate>9600</UartBaudrate>
 		<CLKOPort>-1</CLKOPort>
 		<EnableInt>0</EnableInt>
@@ -1504,5 +1504,19 @@
 		<Pin43Map>1</Pin43Map>
 		<Pin47Map>4</Pin47Map>
 	</PINMAP>
-	<PINALIAS></PINALIAS>
+	<PINALIAS>
+		<Pin09Alias>ADD</Pin09Alias>
+		<Pin10Alias>SUB</Pin10Alias>
+		<Pin21Alias>DA</Pin21Alias>
+		<Pin22Alias>DB</Pin22Alias>
+		<Pin23Alias>DC</Pin23Alias>
+		<Pin33Alias>SH</Pin33Alias>
+		<Pin34Alias>SG</Pin34Alias>
+		<Pin35Alias>SF</Pin35Alias>
+		<Pin36Alias>SE</Pin36Alias>
+		<Pin37Alias>SD</Pin37Alias>
+		<Pin38Alias>SC</Pin38Alias>
+		<Pin39Alias>SB</Pin39Alias>
+		<Pin40Alias>SA</Pin40Alias>
+	</PINALIAS>
 </Project>

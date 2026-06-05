@@ -39,6 +39,21 @@
 //<<AICUBE_USER_INCLUDE_END>>
 
 
+#define ADD                     P32
+#define SUB                     P33
+#define DA                      P22
+#define DB                      P23
+#define DC                      P24
+#define SH                      P07
+#define SG                      P06
+#define SF                      P05
+#define SE                      P04
+#define SD                      P03
+#define SC                      P02
+#define SB                      P01
+#define SA                      P00
+
+
 #include "port.h"
 #include "timer.h"
 #include "adc.h"

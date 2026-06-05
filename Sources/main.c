@@ -38,7 +38,9 @@ void main(void)
     SYS_Init();
 
     //<<AICUBE_USER_MAIN_CODE_BEGIN>>
-    // 在此添加主函数中运行一次的用户代码  
+    // 在此添加主函数中运行一次的用户代码
+    SEG_UpdateMemory(0, 1.234);
+    SEG_UpdateMemory(1, 5.678);  
     //<<AICUBE_USER_MAIN_CODE_END>>
 
     while (1)
