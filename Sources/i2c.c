@@ -190,6 +190,136 @@ void I2C_WriteAT24C02(uint8_t addr, uint8_t *dat, uint8_t size)
 
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_BEGIN>>
 // 在此添加用户函数实现代码  
+static BOOL ADS1110_SendAddress(uint8_t addr)
+{
+    if (I2C_MasterStartSendByte(addr))
+    {
+        I2C_MasterStop();
+        return FALSE;
+    }
+
+    return TRUE;
+}
+
+BOOL ADS1110_WriteConfig(uint8_t config)
+{
+    while (I2C_CheckMasterBusy());
+    I2C_ClearMasterFlag();
+
+    if (!ADS1110_SendAddress(ADS1110_SLAW))
+        return FALSE;
+
+    if (I2C_MasterSendByte(config))
+    {
+        I2C_MasterStop();
+        return FALSE;
+    }
+
+    I2C_MasterStop();
+    return TRUE;
+}
+
+BOOL ADS1110_Init(void)
+{
+    return ADS1110_WriteConfig(ADS1110_CONFIG_DEFAULT);
+}
+
+BOOL ADS1110_StartSingle(uint8_t config)
+{
+    config &= (ADS1110_CFG_DR_MASK | ADS1110_CFG_PGA_MASK);
+    config |= ADS1110_CFG_ST_DRDY | ADS1110_CFG_SINGLE;
+
+    return ADS1110_WriteConfig(config);
+}
+
+BOOL ADS1110_ReadRaw(int16_t *raw, uint8_t *config)
+{
+    uint8_t msb;
+    uint8_t lsb;
+    uint8_t cfg;
+    uint16_t word;
+
+    if (raw == NULL)
+        return FALSE;
+
+    while (I2C_CheckMasterBusy());
+    I2C_ClearMasterFlag();
+
+    if (!ADS1110_SendAddress(ADS1110_SLAR))
+        return FALSE;
+
+    msb = I2C_MasterReadByte(FALSE);
+    lsb = I2C_MasterReadByte(FALSE);
+    cfg = I2C_MasterReadByte(TRUE);
+    I2C_MasterStop();
+
+    word = ((uint16_t)msb << 8) | lsb;
+    *raw = (int16_t)word;
+
+    if (config != NULL)
+        *config = cfg;
+
+    return TRUE;
+}
+
+BOOL ADS1110_ReadRaw16(int16_t *raw)
+{
+    return ADS1110_ReadRaw(raw, NULL);
+}
+
+int32_t ADS1110_RawToMicroVolt(int16_t raw, uint8_t config)
+{
+    int32_t value;
+    int32_t divider;
+
+    divider = 1;
+
+    switch (config & ADS1110_CFG_PGA_MASK)
+    {
+    case ADS1110_CFG_PGA_2:
+        divider = 2;
+        break;
+
+    case ADS1110_CFG_PGA_4:
+        divider = 4;
+        break;
+
+    case ADS1110_CFG_PGA_8:
+        divider = 8;
+        break;
+
+    default:
+        divider = 1;
+        break;
+    }
+
+    switch (config & ADS1110_CFG_DR_MASK)
+    {
+    case ADS1110_CFG_DR_240SPS_12BIT:
+        value = (int32_t)raw * 1000L;
+        break;
+
+    case ADS1110_CFG_DR_60SPS_14BIT:
+        value = (int32_t)raw * 250L;
+        break;
+
+    case ADS1110_CFG_DR_30SPS_15BIT:
+        value = (int32_t)raw * 125L;
+        break;
+
+    default:
+        value = (int32_t)raw * 625L;
+        divider *= 10;
+        break;
+    }
+
+    if (value >= 0)
+        value = (value + (divider / 2)) / divider;
+    else
+        value = (value - (divider / 2)) / divider;
+
+    return value;
+}
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>
 
 

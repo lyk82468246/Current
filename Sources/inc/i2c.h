@@ -12,6 +12,29 @@
 
 //<<AICUBE_USER_DEFINE_BEGIN>>
 // 在此添加用户宏定义  
+#define ADS1110_I2C_ADDR                0x48
+#define ADS1110_SLAW                    ((ADS1110_I2C_ADDR << 1) | 0)
+#define ADS1110_SLAR                    ((ADS1110_I2C_ADDR << 1) | 1)
+
+#define ADS1110_CFG_ST_DRDY             0x80
+#define ADS1110_CFG_SINGLE              0x10
+#define ADS1110_CFG_CONTINUOUS          0x00
+
+#define ADS1110_CFG_DR_240SPS_12BIT     0x00
+#define ADS1110_CFG_DR_60SPS_14BIT      0x04
+#define ADS1110_CFG_DR_30SPS_15BIT      0x08
+#define ADS1110_CFG_DR_15SPS_16BIT      0x0c
+#define ADS1110_CFG_DR_MASK             0x0c
+
+#define ADS1110_CFG_PGA_1               0x00
+#define ADS1110_CFG_PGA_2               0x01
+#define ADS1110_CFG_PGA_4               0x02
+#define ADS1110_CFG_PGA_8               0x03
+#define ADS1110_CFG_PGA_MASK            0x03
+
+#define ADS1110_CONFIG_DEFAULT          (ADS1110_CFG_CONTINUOUS | ADS1110_CFG_DR_15SPS_16BIT | ADS1110_CFG_PGA_1)
+#define ADS1110_CONFIG_SINGLE_16BIT     (ADS1110_CFG_ST_DRDY | ADS1110_CFG_SINGLE | ADS1110_CFG_DR_15SPS_16BIT | ADS1110_CFG_PGA_1)
+#define ADS1110_IsDataReady(config)     (((config) & ADS1110_CFG_ST_DRDY) == 0)
 //<<AICUBE_USER_DEFINE_END>>
 
 
@@ -34,6 +57,14 @@ void I2C_WriteAT24C02(uint8_t addr, uint8_t *dat, uint8_t size);
 
 //<<AICUBE_USER_EXTERNAL_DECLARE_BEGIN>>
 // 在此添加用户外部函数和外部变量声明  
+BOOL I2C_MasterStartSendByte(uint8_t dat);
+
+BOOL ADS1110_Init(void);
+BOOL ADS1110_WriteConfig(uint8_t config);
+BOOL ADS1110_StartSingle(uint8_t config);
+BOOL ADS1110_ReadRaw(int16_t *raw, uint8_t *config);
+BOOL ADS1110_ReadRaw16(int16_t *raw);
+int32_t ADS1110_RawToMicroVolt(int16_t raw, uint8_t config);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>
 
 
