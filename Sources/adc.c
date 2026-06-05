@@ -20,6 +20,8 @@
 
 //<<AICUBE_USER_GLOBAL_DEFINE_BEGIN>>
 // 在此添加用户全局变量定义、用户宏定义以及函数声明  
+volatile uint16_t g_adc_vcc_mV = 0;
+volatile uint16_t g_actual_current_adc = 0;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -71,6 +73,66 @@ uint16_t ADC_Convert(uint8_t ch)
 
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_BEGIN>>
 // 在此添加用户函数实现代码  
+uint16_t ADC_ReadVccMilliVolt(void)
+{
+    uint16_t vref_adc;
+    uint32_t vcc_mV;
+
+    vref_adc = ADC_Convert(ADC_VREF_CHANNEL);
+    if (vref_adc == 0)
+    {
+        return 0;
+    }
+
+    vcc_mV = (ADC_INTERNAL_REF_MV * ADC_FULL_SCALE) / vref_adc;
+    if (vcc_mV > 65535UL)
+    {
+        vcc_mV = 65535UL;
+    }
+
+    return (uint16_t)vcc_mV;
+}
+
+uint16_t ADC_ConvertCurrentMilliAmp(uint16_t adc_value, uint16_t vcc_mV)
+{
+    uint32_t input_uV;
+    uint32_t current_mA;
+
+    if ((CURRENT_SENSE_RES_MOHM == 0) || (CURRENT_AMP_GAIN == 0))
+    {
+        return 0;
+    }
+
+    input_uV = ((uint32_t)adc_value * vcc_mV * 1000UL) / ADC_FULL_SCALE;
+    current_mA = input_uV / (CURRENT_AMP_GAIN * CURRENT_SENSE_RES_MOHM);
+
+    if (current_mA > 9999UL)
+    {
+        current_mA = 9999UL;
+    }
+
+    return (uint16_t)current_mA;
+}
+
+void ADC_UpdateActualCurrentTask(void)
+{
+    uint16_t vcc_mV;
+    uint16_t adc_value;
+    uint16_t current_mA;
+
+    vcc_mV = ADC_ReadVccMilliVolt();
+    if (vcc_mV == 0)
+    {
+        return;
+    }
+
+    adc_value = ADC_Convert(ADC_CURRENT_CHANNEL);
+    current_mA = ADC_ConvertCurrentMilliAmp(adc_value, vcc_mV);
+
+    g_adc_vcc_mV = vcc_mV;
+    g_actual_current_adc = adc_value;
+    SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, current_mA);
+}
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>
 
 

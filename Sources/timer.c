@@ -21,6 +21,7 @@
 //<<AICUBE_USER_GLOBAL_DEFINE_BEGIN>>
 // 在此添加用户全局变量定义、用户宏定义以及函数声明  
 volatile uint8_t g_oled_update_pending = 0;
+volatile uint8_t g_actual_current_update_pending = 0;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -138,6 +139,7 @@ void TIMER2_ISR(void) interrupt TMR2_VECTOR
     // 在此添加中断函数用户代码  
     TIMER2_ClearFlag();
     g_oled_update_pending = 1;
+    g_actual_current_update_pending = 1;
     //<<AICUBE_USER_TIMER2_ISR_CODE1_END>>
 }
 

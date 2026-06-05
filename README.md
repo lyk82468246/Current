@@ -68,6 +68,8 @@
    规划用于补偿硬件电阻温漂、运放失调电压和 DAC/ADC 链路误差。后续可在独立 `calibration.c/.h` 中放置 `[设定电流] -> [DAC控制字]` 映射表和线性插值算法。
 3. **曲线绘制 (Curve Draw)**：
    当前使用 SSD1306 SPI OLED 显示 ADC 实时波形。Timer2 到期后只置位刷新标志，主循环调用 `OLED_WaveTask()` 读取 `ADC_Convert(ADC_WAVE_CHANNEL)`，将 12 位 ADC 结果映射到 0~63 行，并用 128 点环形缓存重建整屏波形。
+4. **ADC15 供电补偿**：
+   当前实际电流显示使用片内 ADC0 采样检流放大后的电压，同时读取 ADC15 内部参考通道反推当前 ADC 参考电压/VCC。该机制用于补偿 3.3V/5V 供电差异和 DC-DC 慢漂，但 ADC15 的内部约 1.19V 参考本身不是精密基准，最终需要用实测 VCC 校准 `ADC_INTERNAL_REF_MV`。
 
 ## 🔢 数码管显示接口
 当前已经实现板载 8 位动态数码管驱动，相关代码位于 `Sources/port.c` / `Sources/inc/port.h`。
@@ -79,7 +81,7 @@
 *   `SEG_ScanNext()`：动态扫描下一位数码管。当前在 Timer0 的 1ms 中断中调用。
 *   显存 `g_seg_display_buf[8]` 按逻辑从左到右保存；由于实测普中板物理位选顺序相反，扫描时已在代码中做反向位选映射，小数点跟随对应的千分位显示。
 
-当前内部电流数据统一按 mA 整数处理；只有显示层负责转成 `A.mmm` 格式。
+当前设定电流按 mA 整数处理；实际测量链路目前也输出 mA 用于 4 位数码管显示。若后续要把实测值参与 DAC 误差控制，建议升级为 uA 定点内部计算，再在显示层四舍五入成 mA。
 
 ## 🔘 按键与防抖
 当前已实现 K3/K4 外部中断按键调节，相关代码位于 `Sources/exti.c` / `Sources/inc/exti.h`。
@@ -99,6 +101,17 @@
 *   Timer2 当前由 AiCube 配置为 100ms 周期；Timer2 中断只设置 `g_oled_update_pending`，真正的 OLED 整屏刷新放在主循环执行，避免阻塞 1ms 数码管动态扫描。
 *   ADC 当前为 12 位右对齐，`0~4095` 通过 `adc >> 6` 映射到 OLED 的 `0~63` 行。
 *   注意采样混叠：100ms 采样率只有 10Hz，测试高频正弦时会出现相位翻转或伪波形。例如 25Hz 正弦每次采样跨过 2.5 个周期，显示上会呈现奇偶列近似反相。
+
+## 📏 ADC 实际电流显示
+当前右侧 4 位数码管显示由 `ADC_UpdateActualCurrentTask()` 更新，相关代码位于 `Sources/adc.c` / `Sources/inc/adc.h`。
+
+*   `ADC_CURRENT_CHANNEL`：实际电流采样通道，当前为 ADC0。
+*   `ADC_VREF_CHANNEL`：内部参考测量通道，当前为 ADC15。
+*   `ADC_INTERNAL_REF_MV`：ADC15 内部参考标称值，当前为 `1190mV`；最终应在实物上用万用表测 MCU VCC 后反推校准。
+*   `CURRENT_SENSE_RES_MOHM`：串联采样电阻，单位 mΩ，当前假设 `100mΩ`。
+*   `CURRENT_AMP_GAIN`：INA/检流放大器增益，当前假设 `20`；若无放大器可改为 `1`。
+*   计算流程：`ADC15 -> VCC_mV`，`ADC0 -> 输入电压 uV`，再按采样电阻和放大倍数换算成 mA 并更新右 4 位显示。
+*   若 MCU VCC 来自 DC-DC，ADC15 可补偿慢变化的 VCC 偏移，但不能消除高频纹波、ADC 非线性、INA 失调和采样电阻误差；最终精度仍依赖零点/增益/多点校准。
 
 ## ⚙️ 编译与下载指南
 1. 确保电脑已安装 Keil C251，并在 STC-ISP 中将 STC 芯片包导入到 Keil 中。

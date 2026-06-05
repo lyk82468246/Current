@@ -59,6 +59,15 @@ void main(void)
             OLED_WaveTask();
         }
 
+        if (g_actual_current_update_pending)
+        {
+            DisableGlobalInt();
+            g_actual_current_update_pending = 0;
+            EnableGlobalInt();
+
+            ADC_UpdateActualCurrentTask();
+        }
+
         DisableGlobalInt();
         display_current_mA = g_current_set_mA;
         EnableGlobalInt();
