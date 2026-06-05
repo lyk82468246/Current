@@ -54,6 +54,9 @@
 #define SC                      P02
 #define SB                      P01
 #define SA                      P00
+#define DAC8311_SYNC            P11
+#define DAC8311_SCLK            P12
+#define DAC8311_DIN             P13
 
 
 #include "port.h"

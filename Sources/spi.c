@@ -228,6 +228,45 @@ void OLED_WaveTask(void)
     OLED_RenderWave();
     OLED_Flush();
 }
+
+void DAC8311_Init(void)
+{
+    DAC8311_SYNC = 1;
+    DAC8311_SCLK = 0;
+    DAC8311_DIN = 0;
+}
+
+void DAC8311_WriteRaw(uint16_t frame)
+{
+    uint8_t i;
+
+    DAC8311_SYNC = 0;
+    for (i = 0; i < 16; i++)
+    {
+        DAC8311_DIN = (frame & 0x8000) ? 1 : 0;
+        DAC8311_SCLK = 1;
+        NOP(2);
+        DAC8311_SCLK = 0;
+        NOP(2);
+        frame <<= 1;
+    }
+    DAC8311_SYNC = 1;
+}
+
+void DAC8311_WriteCode(uint16_t dac_code)
+{
+    if (dac_code > DAC8311_MAX_CODE)
+    {
+        dac_code = DAC8311_MAX_CODE;
+    }
+
+    DAC8311_WriteRaw(DAC8311_PD_NORMAL | dac_code);
+}
+
+void DAC8311_PowerDown(uint16_t power_mode)
+{
+    DAC8311_WriteRaw(power_mode & 0xC000);
+}
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>
 
 

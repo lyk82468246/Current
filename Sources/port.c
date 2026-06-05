@@ -56,7 +56,8 @@ void PORT0_Init(void)
 void PORT1_Init(void)
 {
     SetP1nInitLevelHigh(PIN_ALL);       //设置P1初始化电平
-    SetP1nQuasiMode(PIN_7 | PIN_6 | PIN_5 | PIN_4 | PIN_3 | PIN_2 | PIN_1); //设置P1.7,P1.6,P1.5,P1.4,P1.3,P1.2,P1.1为准双向口模式
+    SetP1nQuasiMode(PIN_7 | PIN_6 | PIN_5 | PIN_4); //设置P1.7,P1.6,P1.5,P1.4为准双向口模式
+    SetP1nPushPullMode(PIN_3 | PIN_2 | PIN_1); //设置P1.3,P1.2,P1.1为推挽输出模式
     SetP1nHighZInputMode(PIN_0);        //设置P1.0为高阻输入模式
     SetP1nManualMode(PIN_ALL);          //设置P1手动配置端口模式
 

@@ -133,6 +133,7 @@ void ADC_UpdateActualCurrentTask(void)
     g_actual_current_adc = adc_value;
     SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, current_mA);
 }
+
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>
 
 

@@ -19,6 +19,7 @@
 #define ADC_FULL_SCALE                  4096UL
 #define CURRENT_SENSE_RES_MOHM          100UL
 #define CURRENT_AMP_GAIN                20UL
+
 //<<AICUBE_USER_DEFINE_END>>
 
 

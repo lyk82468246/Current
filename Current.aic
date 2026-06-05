@@ -127,7 +127,7 @@
 		<PortIE_0>0</PortIE_0>
 		<PortWK_0>0</PortWK_0>
 		<PortLevel_0>1</PortLevel_0>
-		<PortMD_1>0</PortMD_1>
+		<PortMD_1>1</PortMD_1>
 		<PortBP_1>1</PortBP_1>
 		<PortPU_1>0</PortPU_1>
 		<PortPD_1>0</PortPD_1>
@@ -138,7 +138,7 @@
 		<PortIE_1>0</PortIE_1>
 		<PortWK_1>0</PortWK_1>
 		<PortLevel_1>1</PortLevel_1>
-		<PortMD_2>0</PortMD_2>
+		<PortMD_2>1</PortMD_2>
 		<PortBP_2>1</PortBP_2>
 		<PortPU_2>0</PortPU_2>
 		<PortPD_2>0</PortPD_2>
@@ -149,7 +149,7 @@
 		<PortIE_2>0</PortIE_2>
 		<PortWK_2>0</PortWK_2>
 		<PortLevel_2>1</PortLevel_2>
-		<PortMD_3>0</PortMD_3>
+		<PortMD_3>1</PortMD_3>
 		<PortBP_3>1</PortBP_3>
 		<PortPU_3>0</PortPU_3>
 		<PortPD_3>0</PortPD_3>
@@ -1524,5 +1524,8 @@
 		<Pin38Alias>SC</Pin38Alias>
 		<Pin39Alias>SB</Pin39Alias>
 		<Pin40Alias>SA</Pin40Alias>
+		<Pin44Alias>DAC8311_SYNC</Pin44Alias>
+		<Pin45Alias>DAC8311_SCLK</Pin45Alias>
+		<Pin46Alias>DAC8311_DIN</Pin46Alias>
 	</PINALIAS>
 </Project>
