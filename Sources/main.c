@@ -20,6 +20,8 @@
 
 //<<AICUBE_USER_GLOBAL_DEFINE_BEGIN>>
 // 在此添加用户全局变量定义、用户宏定义以及函数声明  
+volatile uint8_t g_current_mode = 0;
+volatile uint16_t g_current_set_mA = 0;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -33,20 +35,26 @@ void main(void)
 {
     //<<AICUBE_USER_MAIN_INITIAL_BEGIN>>
     // 在此添加用户主函数初始化代码  
+    uint16_t display_current_mA;
     //<<AICUBE_USER_MAIN_INITIAL_END>>
 
     SYS_Init();
 
     //<<AICUBE_USER_MAIN_CODE_BEGIN>>
     // 在此添加主函数中运行一次的用户代码
-    SEG_UpdateMemory(0, 1.234);
-    SEG_UpdateMemory(1, 5.678);  
+    SEG_UpdateMemory(SEG_GROUP_SET_CURRENT, 0);
+    SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, 0);
     //<<AICUBE_USER_MAIN_CODE_END>>
 
     while (1)
     {
         //<<AICUBE_USER_MAIN_LOOP_BEGIN>>
         // 在此添加主函数中用户主循环代码  
+        DisableGlobalInt();
+        display_current_mA = g_current_set_mA;
+        EnableGlobalInt();
+
+        SEG_UpdateMemory(SEG_GROUP_SET_CURRENT, display_current_mA);
         //<<AICUBE_USER_MAIN_LOOP_END>>
     }
 }
@@ -72,6 +80,9 @@ void SYS_Init(void)
     PORT2_Init();                       //P2口初始化
     PORT3_Init();                       //P3口初始化
     TIMER0_Init();                      //定时器0初始化
+    TIMER1_Init();                      //定时器1初始化
+    EXTI0_Init();                       //INT0初始化
+    EXTI1_Init();                       //INT1初始化
     ADC_Init();                         //ADC初始化
     I2C_Init();                         //I2C初始化
 

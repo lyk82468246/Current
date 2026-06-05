@@ -56,6 +56,7 @@
 
 #include "port.h"
 #include "timer.h"
+#include "exti.h"
 #include "adc.h"
 #include "i2c.h"
 

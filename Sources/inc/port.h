@@ -28,12 +28,12 @@ void PORT3_Init(void);
 
 //<<AICUBE_USER_EXTERNAL_DECLARE_BEGIN>>
 // 在此添加用户外部函数和外部变量声明  
-extern volatile float g_set_current_A;
-extern volatile float g_actual_current_A;
+extern volatile uint16_t g_set_current_mA;
+extern volatile uint16_t g_actual_current_mA;
 extern volatile uint8_t g_seg_display_buf[SEG_DISPLAY_DIGITS];
 extern volatile uint8_t g_seg_scan_pos;
 
-void SEG_UpdateMemory(uint8_t idx, float value);
+void SEG_UpdateMemory(uint8_t idx, uint16_t current_mA);
 void SEG_ScanNext(void);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>
 

@@ -122,8 +122,8 @@ void PORT3_Init(void)
 
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_BEGIN>>
 // 在此添加用户函数实现代码  
-volatile float g_set_current_A = 0.0f;
-volatile float g_actual_current_A = 0.0f;
+volatile uint16_t g_set_current_mA = 0;
+volatile uint16_t g_actual_current_mA = 0;
 volatile uint8_t g_seg_display_buf[SEG_DISPLAY_DIGITS] = {0};
 volatile uint8_t g_seg_scan_pos = 0;
 
@@ -153,16 +153,11 @@ static void SEG_SelectDigit(uint8_t pos)
     DC = (pos & 0x04) ? 1 : 0;
 }
 
-static void SEG_FormatCurrentToBuf(float value, volatile uint8_t *buf)
+static void SEG_FormatCurrentToBuf(uint16_t current_mA, volatile uint8_t *buf)
 {
     uint16_t display_value;
 
-    if (value < 0.0f)
-    {
-        value = 0.0f;
-    }
-
-    display_value = (uint16_t)(value * 1000.0f + 0.5f);
+    display_value = current_mA;
     if (display_value > 9999)
     {
         display_value = 9999;
@@ -174,17 +169,17 @@ static void SEG_FormatCurrentToBuf(float value, volatile uint8_t *buf)
     buf[3] = SEG_DIGIT_CODE[display_value % 10];
 }
 
-void SEG_UpdateMemory(uint8_t idx, float value)
+void SEG_UpdateMemory(uint8_t idx, uint16_t current_mA)
 {
     if (idx == SEG_GROUP_SET_CURRENT)
     {
-        g_set_current_A = value;
-        SEG_FormatCurrentToBuf(value, &g_seg_display_buf[0]);
+        g_set_current_mA = current_mA;
+        SEG_FormatCurrentToBuf(current_mA, &g_seg_display_buf[0]);
     }
     else if (idx == SEG_GROUP_ACTUAL_CURRENT)
     {
-        g_actual_current_A = value;
-        SEG_FormatCurrentToBuf(value, &g_seg_display_buf[4]);
+        g_actual_current_mA = current_mA;
+        SEG_FormatCurrentToBuf(current_mA, &g_seg_display_buf[4]);
     }
 }
 

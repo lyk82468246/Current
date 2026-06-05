@@ -42,13 +42,15 @@
  ┣ 📂 Sources
  ┃ ┣ 📜 main.c             # 主函数、系统初始化与当前显示测试入口
  ┃ ┣ 📜 port.c             # GPIO 初始化、数码管显存更新与动态扫描
- ┃ ┣ 📜 timer.c            # Timer0 初始化与 1ms 中断
+ ┃ ┣ 📜 timer.c            # Timer0 1ms 数码管扫描、Timer1 20ms 按键防抖
+ ┃ ┣ 📜 exti.c             # 外部中断按键事件与电流设定调节
  ┃ ┣ 📜 adc.c              # AI8051U 片内 ADC 初始化与转换函数
  ┃ ┣ 📜 i2c.c              # AI8051U 硬件 I2C 底层读写函数
  ┃ ┗ 📂 inc
  ┃   ┣ 📜 config.h         # 全局配置、引脚别名与公共头文件
  ┃   ┣ 📜 port.h           # 端口与数码管接口声明
  ┃   ┣ 📜 timer.h
+ ┃   ┣ 📜 exti.h
  ┃   ┣ 📜 adc.h
  ┃   ┗ 📜 i2c.h
  ┣ 📜 Current.uvproj       # Keil uVision 工程
@@ -59,7 +61,7 @@
 
 ## 🚀 核心算法说明
 1. **多任务伪操作系统 (裸机状态机)**：
-   依靠 Timer0 的 1ms 中断，维护周期性任务。当前工程已经在 Timer0 中断中调用 `SEG_ScanNext()`，每次只扫描 1 位数码管。
+   依靠 Timer0 的 1ms 中断维护数码管动态扫描。当前工程已经在 Timer0 中断中调用 `SEG_ScanNext()`，每次只扫描 1 位数码管；Timer1 作为一次性 20ms 按键防抖定时器，仅在外部中断触发后启动。
 2. **多点线性校准 (Calibration)**：
    规划用于补偿硬件电阻温漂、运放失调电压和 DAC/ADC 链路误差。后续可在独立 `calibration.c/.h` 中放置 `[设定电流] -> [DAC控制字]` 映射表和线性插值算法。
 3. **曲线绘制 (Curve Draw)**：
@@ -68,19 +70,24 @@
 ## 🔢 数码管显示接口
 当前已经实现板载 8 位动态数码管驱动，相关代码位于 `Sources/port.c` / `Sources/inc/port.h`。
 
-*   `SEG_UpdateMemory(idx, value)`：更新数码管显存，不会立即自动扫描。
+*   `SEG_UpdateMemory(idx, current_mA)`：更新数码管显存，不会立即自动扫描。
     *   `idx = SEG_GROUP_SET_CURRENT`：更新左 4 位，显示设定电流。
     *   `idx = SEG_GROUP_ACTUAL_CURRENT`：更新右 4 位，显示实际电流。
-    *   `value` 按安培显示为 `1.234` 格式，范围超过 `9.999` 时按 `9.999` 限幅。
+    *   `current_mA` 使用 mA 整数单位，例如 `1234` 显示为 `1.234A`，范围超过 `9999mA` 时按 `9.999A` 限幅。
 *   `SEG_ScanNext()`：动态扫描下一位数码管。当前在 Timer0 的 1ms 中断中调用。
 *   显存 `g_seg_display_buf[8]` 按逻辑从左到右保存；由于实测普中板物理位选顺序相反，扫描时已在代码中做反向位选映射，小数点跟随对应的千分位显示。
 
-当前 `main.c` 中的测试显示值为：
+当前内部电流数据统一按 mA 整数处理；只有显示层负责转成 `A.mmm` 格式。
 
-```c
-SEG_UpdateMemory(SEG_GROUP_SET_CURRENT, 1.234);
-SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, 5.678);
-```
+## 🔘 按键与防抖
+当前已实现 K3/K4 外部中断按键调节，相关代码位于 `Sources/exti.c` / `Sources/inc/exti.h`。
+
+*   `INT0 / K3 / ADD`：增加设定电流。
+*   `INT1 / K4 / SUB`：减少设定电流。
+*   `g_current_mode = 0`：基础部分，允许 `0mA` 或 `100~1000mA`，步进 `50mA`。
+*   `g_current_mode = 1`：提高部分，允许 `0mA` 或 `100~2000mA`，步进 `100mA`。
+*   外部中断只记录按键待确认标志并启动 Timer1；Timer1 到 20ms 后读取 `ADD/SUB` 当前电平，若仍为低电平才执行一次调节。
+*   所有手写逻辑都放在 AiCube 的 `//<<AICUBE_USER_...>>` 用户区内，避免重新生成配置时被覆盖。
 
 ## ⚙️ 编译与下载指南
 1. 确保电脑已安装 Keil C251，并在 STC-ISP 中将 STC 芯片包导入到 Keil 中。
@@ -93,4 +100,4 @@ SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, 5.678);
 ---
 **👨‍💻 参赛团队**：[在这里填入你的学校/团队名]
 **📅 更新日期**：2026 年 6 月 5 日
-**⚠️ 进度标记**：`[已完成] LTspice全链路仿真` -> `[已完成] AiCube底层配置与数码管动态扫描` -> `[进行中] 按键/ADC/DAC/OLED 驱动联调` -> `[待进行] 模拟板PCB打样与闭环联调`
+**⚠️ 进度标记**：`[已完成] LTspice全链路仿真` -> `[已完成] AiCube底层配置、数码管动态扫描与按键防抖调节` -> `[进行中] ADC/DAC/OLED 驱动联调` -> `[待进行] 模拟板PCB打样与闭环联调`

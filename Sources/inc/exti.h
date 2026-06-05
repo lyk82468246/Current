@@ -1,13 +1,13 @@
 //<<AICUBE_USER_HEADER_REMARK_BEGIN>>
 ////////////////////////////////////////
 // 在此添加用户文件头说明信息  
-// 文件名称: timer.h
+// 文件名称: exti.h
 ////////////////////////////////////////
 //<<AICUBE_USER_HEADER_REMARK_END>>
 
 
-#ifndef __TIMER_H__
-#define __TIMER_H__
+#ifndef __EXTI_H__
+#define __EXTI_H__
 
 
 //<<AICUBE_USER_DEFINE_BEGIN>>
@@ -16,14 +16,17 @@
 
 
 
-void TIMER0_Init(void);
-void TIMER1_Init(void);
+void EXTI0_Init(void);
+void EXTI1_Init(void);
 
 
 
 //<<AICUBE_USER_EXTERNAL_DECLARE_BEGIN>>
 // 在此添加用户外部函数和外部变量声明  
-void TIMER1_StartDebounce(void);
+extern volatile uint8_t g_current_mode;
+extern volatile uint16_t g_current_set_mA;
+
+void EXTI_KeyDebounceProcess(void);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>
 
 

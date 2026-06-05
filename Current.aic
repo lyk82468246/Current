@@ -654,7 +654,7 @@
 		<IntPriority>0</IntPriority>
 	</TIMER0>
 	<TIMER1>
-		<PeriEnable>0</PeriEnable>
+		<PeriEnable>1</PeriEnable>
 		<EnableCLKO>0</EnableCLKO>
 		<EnableGATE>0</EnableGATE>
 		<BaudrateX2>0</BaudrateX2>
@@ -663,14 +663,14 @@
 		<TimerCT>0</TimerCT>
 		<TimerMode>0</TimerMode>
 		<TimerAction>0</TimerAction>
-		<TimerInterval>10</TimerInterval>
+		<TimerInterval>20</TimerInterval>
 		<TimerUnit>1</TimerUnit>
-		<TimerReload>16667</TimerReload>
+		<TimerReload>33333</TimerReload>
 		<ClockPrescale>1</ClockPrescale>
 		<UartBaudrate>9600</UartBaudrate>
 		<CLKOPort>-1</CLKOPort>
-		<EnableInt>0</EnableInt>
-		<IntPriority>0</IntPriority>
+		<EnableInt>1</EnableInt>
+		<IntPriority>1</IntPriority>
 	</TIMER1>
 	<TIMER2>
 		<PeriEnable>0</PeriEnable>
@@ -905,16 +905,16 @@
 		<RxCount></RxCount>
 	</UART4>
 	<EXTI0>
-		<PeriEnable>0</PeriEnable>
-		<EnableInt>0</EnableInt>
-		<IntType>0</IntType>
-		<IntPriority>0</IntPriority>
+		<PeriEnable>1</PeriEnable>
+		<EnableInt>1</EnableInt>
+		<IntType>1</IntType>
+		<IntPriority>2</IntPriority>
 	</EXTI0>
 	<EXTI1>
-		<PeriEnable>0</PeriEnable>
-		<EnableInt>0</EnableInt>
-		<IntType>0</IntType>
-		<IntPriority>0</IntPriority>
+		<PeriEnable>1</PeriEnable>
+		<EnableInt>1</EnableInt>
+		<IntType>1</IntType>
+		<IntPriority>2</IntPriority>
 	</EXTI1>
 	<EXTI2>
 		<PeriEnable>0</PeriEnable>
