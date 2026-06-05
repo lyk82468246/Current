@@ -1,0 +1,17 @@
+# Keil / C51 build outputs
+Listings/
+Objects/
+
+# Keil user/session files
+*.uvgui.*
+*.uvguix.*
+
+# Keil backup project files
+*_bk*.uvproj
+*_bk*.uvopt
+
+# Generic temporary files
+*.bak
+*.tmp
+*.swp
+Thumbs.db
