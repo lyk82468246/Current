@@ -32,7 +32,8 @@
 void PORT0_Init(void)
 {
     SetP0nInitLevelHigh(PIN_ALL);       //设置P0初始化电平
-    SetP0nPushPullMode(PIN_ALL);        //设置P0为推挽输出模式
+    SetP0nQuasiMode(PIN_3 | PIN_2);     //设置P0.3,P0.2为准双向口模式
+    SetP0nPushPullMode(PIN_7 | PIN_6 | PIN_5 | PIN_4 | PIN_1 | PIN_0); //设置P0.7,P0.6,P0.5,P0.4,P0.1,P0.0为推挽输出模式
     SetP0nManualMode(PIN_ALL);          //设置P0手动配置端口模式
 
     DisableP0nPullUp(PIN_ALL);          //关闭P0内部上拉电阻

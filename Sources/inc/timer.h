@@ -18,11 +18,14 @@
 
 void TIMER0_Init(void);
 void TIMER1_Init(void);
+void TIMER2_Init(void);
 
 
 
 //<<AICUBE_USER_EXTERNAL_DECLARE_BEGIN>>
 // 在此添加用户外部函数和外部变量声明  
+extern volatile uint8_t g_oled_update_pending;
+
 void TIMER1_StartDebounce(void);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>
 

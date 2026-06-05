@@ -50,6 +50,15 @@ void main(void)
     {
         //<<AICUBE_USER_MAIN_LOOP_BEGIN>>
         // 在此添加主函数中用户主循环代码  
+        if (g_oled_update_pending)
+        {
+            DisableGlobalInt();
+            g_oled_update_pending = 0;
+            EnableGlobalInt();
+
+            OLED_WaveTask();
+        }
+
         DisableGlobalInt();
         display_current_mA = g_current_set_mA;
         EnableGlobalInt();
@@ -81,9 +90,11 @@ void SYS_Init(void)
     PORT3_Init();                       //P3口初始化
     TIMER0_Init();                      //定时器0初始化
     TIMER1_Init();                      //定时器1初始化
+    TIMER2_Init();                      //定时器2初始化
     EXTI0_Init();                       //INT0初始化
     EXTI1_Init();                       //INT1初始化
     ADC_Init();                         //ADC初始化
+    SPI_Init();                         //SPI初始化
     I2C_Init();                         //I2C初始化
 
     //<<AICUBE_USER_INITIAL_CODE_BEGIN>>

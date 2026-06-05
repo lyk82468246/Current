@@ -46,7 +46,7 @@
 		<PortIE_1>0</PortIE_1>
 		<PortWK_1>0</PortWK_1>
 		<PortLevel_1>1</PortLevel_1>
-		<PortMD_2>1</PortMD_2>
+		<PortMD_2>0</PortMD_2>
 		<PortBP_2>1</PortBP_2>
 		<PortPU_2>0</PortPU_2>
 		<PortPD_2>0</PortPD_2>
@@ -57,7 +57,7 @@
 		<PortIE_2>0</PortIE_2>
 		<PortWK_2>0</PortWK_2>
 		<PortLevel_2>1</PortLevel_2>
-		<PortMD_3>1</PortMD_3>
+		<PortMD_3>0</PortMD_3>
 		<PortBP_3>1</PortBP_3>
 		<PortPU_3>0</PortPU_3>
 		<PortPD_3>0</PortPD_3>
@@ -673,7 +673,7 @@
 		<IntPriority>1</IntPriority>
 	</TIMER1>
 	<TIMER2>
-		<PeriEnable>0</PeriEnable>
+		<PeriEnable>1</PeriEnable>
 		<EnableCLKO>0</EnableCLKO>
 		<EnableGATE>0</EnableGATE>
 		<BaudrateX2>0</BaudrateX2>
@@ -683,12 +683,12 @@
 		<TimerMode>0</TimerMode>
 		<TimerAction>0</TimerAction>
 		<TimerInterval>100</TimerInterval>
-		<TimerUnit>0</TimerUnit>
-		<TimerReload>1</TimerReload>
-		<ClockPrescale>0</ClockPrescale>
+		<TimerUnit>1</TimerUnit>
+		<TimerReload>55556</TimerReload>
+		<ClockPrescale>5</ClockPrescale>
 		<UartBaudrate>9600</UartBaudrate>
 		<CLKOPort>-1</CLKOPort>
-		<EnableInt>0</EnableInt>
+		<EnableInt>1</EnableInt>
 		<IntPriority>0</IntPriority>
 	</TIMER2>
 	<TIMER3>
@@ -977,13 +977,13 @@
 		<EnableAnalogFilter>0</EnableAnalogFilter>
 	</CMP>
 	<SPI>
-		<PeriEnable>0</PeriEnable>
+		<PeriEnable>1</PeriEnable>
 		<EnableHSSPI>0</EnableHSSPI>
 		<EnableHSSPIFIFO>0</EnableHSSPIFIFO>
 		<EnableTMO>0</EnableTMO>
 		<EnableTMOInt>0</EnableTMOInt>
 		<EnableInt>0</EnableInt>
-		<SPIPort>-1</SPIPort>
+		<SPIPort>1</SPIPort>
 		<SPISwap>0</SPISwap>
 		<SPIMode>0</SPIMode>
 		<BitOrder>0</BitOrder>
@@ -1499,6 +1499,10 @@
 		<PinCount>256</PinCount>
 		<Pin02Map>4</Pin02Map>
 		<Pin17Map>255</Pin17Map>
+		<Pin23Map>1</Pin23Map>
+		<Pin26Map>1</Pin26Map>
+		<Pin27Map>1</Pin27Map>
+		<Pin28Map>1</Pin28Map>
 		<Pin29Map>255</Pin29Map>
 		<Pin41Map>255</Pin41Map>
 		<Pin43Map>1</Pin43Map>
@@ -1507,6 +1511,8 @@
 	<PINALIAS>
 		<Pin09Alias>ADD</Pin09Alias>
 		<Pin10Alias>SUB</Pin10Alias>
+		<Pin19Alias>RST</Pin19Alias>
+		<Pin20Alias>D_C</Pin20Alias>
 		<Pin21Alias>DA</Pin21Alias>
 		<Pin22Alias>DB</Pin22Alias>
 		<Pin23Alias>DC</Pin23Alias>

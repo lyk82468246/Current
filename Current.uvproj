@@ -353,6 +353,11 @@
               <FilePath>.\Sources\adc.c</FilePath>
             </File>
             <File>
+              <FileName>spi.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Sources\spi.c</FilePath>
+            </File>
+            <File>
               <FileName>i2c.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Sources\i2c.c</FilePath>

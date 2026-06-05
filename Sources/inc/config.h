@@ -41,6 +41,8 @@
 
 #define ADD                     P32
 #define SUB                     P33
+#define RST                     P20
+#define D_C                     P21
 #define DA                      P22
 #define DB                      P23
 #define DC                      P24
@@ -58,6 +60,7 @@
 #include "timer.h"
 #include "exti.h"
 #include "adc.h"
+#include "spi.h"
 #include "i2c.h"
 
 void SYS_Init(void);
