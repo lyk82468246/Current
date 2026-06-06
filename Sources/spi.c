@@ -562,12 +562,22 @@ void OLED_SetSegmentRemap(uint8_t remap)
 void DAC8311_Init(void)
 {
     DAC8311_SYNC = 1;
+#if !DAC8311_USE_HARDWARE_SPI
     DAC8311_SCLK = 0;
     DAC8311_DIN = 0;
+#endif
 }
 
 void DAC8311_WriteRaw(uint16_t frame)
 {
+#if DAC8311_USE_HARDWARE_SPI
+    DAC8311_SYNC = 0;
+    NOP(2);
+    SPI_WriteByte((uint8_t)(frame >> 8));
+    SPI_WriteByte((uint8_t)frame);
+    NOP(2);
+    DAC8311_SYNC = 1;
+#else
     uint8_t i;
 
     DAC8311_SYNC = 0;
@@ -581,6 +591,7 @@ void DAC8311_WriteRaw(uint16_t frame)
         frame <<= 1;
     }
     DAC8311_SYNC = 1;
+#endif
 }
 
 void DAC8311_WriteCode(uint16_t dac_code)

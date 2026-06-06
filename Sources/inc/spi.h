@@ -24,6 +24,8 @@
 #define DAC8311_PD_100K         0x8000
 #define DAC8311_PD_HIGH_Z       0xC000
 
+#define DAC8311_USE_HARDWARE_SPI 0
+
 #define OLED_TEST_EMPTY         0
 #define OLED_TEST_FULL          1
 #define OLED_TEST_ODD_ROWS      2

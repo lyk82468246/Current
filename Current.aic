@@ -987,7 +987,7 @@
 		<SPISwap>0</SPISwap>
 		<SPIMode>0</SPIMode>
 		<BitOrder>0</BitOrder>
-		<SPIClockMode>0</SPIClockMode>
+		<SPIClockMode>1</SPIClockMode>
 		<SPIClockDivider>1</SPIClockDivider>
 		<HSSPIClockDivider>2</HSSPIClockDivider>
 		<HSSPISSSetupTiming>3</HSSPISSSetupTiming>
