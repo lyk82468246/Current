@@ -22,11 +22,16 @@
 // 在此添加用户全局变量定义、用户宏定义以及函数声明  
 #define KEY_DEBOUNCE_ADD_FLAG       0x01
 #define KEY_DEBOUNCE_SUB_FLAG       0x02
+#define KEY_ADD_LONG_TICKS          50
 
 static volatile uint8_t g_key_debounce_flags = 0;
+static uint8_t g_add_tracking = 0;
+static uint8_t g_add_press_ticks = 0;
+static uint8_t g_add_long_fired = 0;
 
 static void KeyDebounceStart(uint8_t flag);
 static void CurrentAdjust(uint8_t increase);
+static void CurrentModeToggle(void);
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -105,22 +110,61 @@ static void KeyDebounceStart(uint8_t flag)
 void EXTI_KeyDebounceProcess(void)
 {
     uint8_t flags;
+    uint8_t restart_timer;
 
     TIMER1_Stop();
     TIMER1_DisableInt();
     TIMER1_ClearFlag();
 
+    restart_timer = 0;
     flags = g_key_debounce_flags;
     g_key_debounce_flags = 0;
 
-    if ((flags & KEY_DEBOUNCE_ADD_FLAG) && (ADD == 0))
+    if (g_add_tracking)
     {
-        CurrentAdjust(1);
+        if (ADD == 0)
+        {
+            if (g_add_press_ticks < 255)
+            {
+                g_add_press_ticks++;
+            }
+
+            if (!g_add_long_fired && (g_add_press_ticks >= KEY_ADD_LONG_TICKS))
+            {
+                CurrentModeToggle();
+                g_add_long_fired = 1;
+            }
+
+            restart_timer = 1;
+        }
+        else
+        {
+            if (!g_add_long_fired)
+            {
+                CurrentAdjust(1);
+            }
+
+            g_add_tracking = 0;
+            g_add_press_ticks = 0;
+            g_add_long_fired = 0;
+        }
+    }
+    else if ((flags & KEY_DEBOUNCE_ADD_FLAG) && (ADD == 0))
+    {
+        g_add_tracking = 1;
+        g_add_press_ticks = 1;
+        g_add_long_fired = 0;
+        restart_timer = 1;
     }
 
     if ((flags & KEY_DEBOUNCE_SUB_FLAG) && (SUB == 0))
     {
         CurrentAdjust(0);
+    }
+
+    if (restart_timer)
+    {
+        TIMER1_StartDebounce();
     }
 }
 
@@ -169,6 +213,23 @@ static void CurrentAdjust(uint8_t increase)
             {
                 g_current_set_mA = 100;
             }
+        }
+    }
+}
+
+static void CurrentModeToggle(void)
+{
+    if (g_current_mode == 0)
+    {
+        g_current_mode = 1;
+        g_current_set_mA = (g_current_set_mA / 100) * 100;
+    }
+    else
+    {
+        g_current_mode = 0;
+        if (g_current_set_mA > 1000)
+        {
+            g_current_set_mA = 1000;
         }
     }
 }

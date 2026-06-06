@@ -131,6 +131,8 @@ volatile uint8_t g_seg_scan_pos = 0;
 
 #define SEG_DP_MASK             0x80
 #define SEG_BLANK_CODE          0x00
+#define SEG_MODE_BASIC_CODE     0x7c
+#define SEG_MODE_PRO_CODE       0x73
 
 static uint8_t code SEG_DIGIT_CODE[10] =
 {
@@ -171,12 +173,28 @@ static void SEG_FormatCurrentToBuf(uint16_t current_mA, volatile uint8_t *buf)
     buf[3] = SEG_DIGIT_CODE[display_value % 10];
 }
 
+static void SEG_FormatSetCurrentToBuf(uint16_t current_mA, volatile uint8_t *buf)
+{
+    uint16_t display_value;
+
+    display_value = current_mA;
+    if (display_value > 9999)
+    {
+        display_value = 9999;
+    }
+
+    buf[0] = SEG_DIGIT_CODE[display_value / 1000] | SEG_DP_MASK;
+    buf[1] = SEG_DIGIT_CODE[(display_value / 100) % 10];
+    buf[2] = SEG_DIGIT_CODE[(display_value / 10) % 10];
+    buf[3] = (g_current_mode == 0) ? SEG_MODE_BASIC_CODE : SEG_MODE_PRO_CODE;
+}
+
 void SEG_UpdateMemory(uint8_t idx, uint16_t current_mA)
 {
     if (idx == SEG_GROUP_SET_CURRENT)
     {
         g_set_current_mA = current_mA;
-        SEG_FormatCurrentToBuf(current_mA, &g_seg_display_buf[0]);
+        SEG_FormatSetCurrentToBuf(current_mA, &g_seg_display_buf[0]);
     }
     else if (idx == SEG_GROUP_ACTUAL_CURRENT)
     {
