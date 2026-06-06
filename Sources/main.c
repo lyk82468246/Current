@@ -50,6 +50,8 @@ void main(void)
     {
         //<<AICUBE_USER_MAIN_LOOP_BEGIN>>
         // 在此添加主函数中用户主循环代码  
+        UART1_CommandTask();
+
         if (g_oled_update_pending)
         {
             DisableGlobalInt();
@@ -66,6 +68,16 @@ void main(void)
             EnableGlobalInt();
 
             ADC_UpdateActualCurrentTask();
+            PID_ControlTask();
+        }
+
+        if (g_uart_telemetry_pending)
+        {
+            DisableGlobalInt();
+            g_uart_telemetry_pending = 0;
+            EnableGlobalInt();
+
+            UART1_SendStatus();
         }
 
         DisableGlobalInt();
@@ -97,9 +109,12 @@ void SYS_Init(void)
     PORT1_Init();                       //P1口初始化
     PORT2_Init();                       //P2口初始化
     PORT3_Init();                       //P3口初始化
+    IAP_Init();                         //EEPROM初始化
     TIMER0_Init();                      //定时器0初始化
     TIMER1_Init();                      //定时器1初始化
     TIMER2_Init();                      //定时器2初始化
+    TIMER3_Init();                      //定时器3初始化
+    UART1_Init();                       //串口1初始化
     EXTI0_Init();                       //INT0初始化
     EXTI1_Init();                       //INT1初始化
     ADC_Init();                         //ADC初始化

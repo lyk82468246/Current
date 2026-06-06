@@ -22,6 +22,9 @@
 // 在此添加用户全局变量定义、用户宏定义以及函数声明  
 volatile uint8_t g_oled_update_pending = 0;
 volatile uint8_t g_actual_current_update_pending = 0;
+volatile uint8_t g_uart_telemetry_pending = 0;
+
+static uint8_t g_uart_telemetry_divider = 0;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -86,12 +89,15 @@ void TIMER1_Init(void)
 ////////////////////////////////////////
 void TIMER2_Init(void)
 {
-#define T2_PSCR                 (5)
-#define T2_RELOAD               (65536 - (float)SYSCLK / 12 / (T2_PSCR + 1) * 100 / 1000) //定时周期100毫秒
+#define T2_PSCR                 (0)
+#ifdef BAUDRATE
+#undef BAUDRATE
+#endif
+#define BAUDRATE                (115200UL)
+#define T2_RELOAD               (65536 - (SYSCLK / BAUDRATE + 2) / 4)
 
     TIMER2_TimerMode();                 //设置定时器2为定时模式
-    TIMER2_12TMode();                   //设置定时器2为12T模式
-    TIMER2_EnableInt();                 //使能定时器2中断
+    TIMER2_1TMode();                    //设置定时器2为1T模式
     TIMER2_SetPrescale(T2_PSCR);        //设置定时器2的8位预分频
     TIMER2_SetReload16(T2_RELOAD);      //设置定时器2的16位重载值
     TIMER2_Run();                       //定时器2开始运行
@@ -99,6 +105,28 @@ void TIMER2_Init(void)
     //<<AICUBE_USER_TIMER2_INITIAL_BEGIN>>
     // 在此添加用户初始化代码  
     //<<AICUBE_USER_TIMER2_INITIAL_END>>
+}
+
+////////////////////////////////////////
+// 定时器3初始化函数
+// 入口参数: 无
+// 函数返回: 无
+////////////////////////////////////////
+void TIMER3_Init(void)
+{
+#define T3_PSCR                 (5)
+#define T3_RELOAD               (65536 - (float)SYSCLK / 12 / (T3_PSCR + 1) * 100 / 1000) //定时周期100毫秒
+
+    TIMER3_TimerMode();                 //设置定时器3为定时模式
+    TIMER3_12TMode();                   //设置定时器3为12T模式
+    TIMER3_EnableInt();                 //使能定时器3中断
+    TIMER3_SetPrescale(T3_PSCR);        //设置定时器3的8位预分频
+    TIMER3_SetReload16(T3_RELOAD);      //设置定时器3的16位重载值
+    TIMER3_Run();                       //定时器3开始运行
+
+    //<<AICUBE_USER_TIMER3_INITIAL_BEGIN>>
+    // 在此添加用户初始化代码  
+    //<<AICUBE_USER_TIMER3_INITIAL_END>>
 }
 
 
@@ -129,18 +157,25 @@ void TIMER1_ISR(void) interrupt TMR1_VECTOR
 }
 
 ////////////////////////////////////////
-// 定时器2中断服务程序
+// 定时器3中断服务程序
 // 入口参数: 无
 // 函数返回: 无
 ////////////////////////////////////////
-void TIMER2_ISR(void) interrupt TMR2_VECTOR
+void TIMER3_ISR(void) interrupt TMR3_VECTOR
 {
-    //<<AICUBE_USER_TIMER2_ISR_CODE1_BEGIN>>
+    //<<AICUBE_USER_TIMER3_ISR_CODE1_BEGIN>>
     // 在此添加中断函数用户代码  
-    TIMER2_ClearFlag();
+    TIMER3_ClearFlag();
     g_oled_update_pending = 1;
     g_actual_current_update_pending = 1;
-    //<<AICUBE_USER_TIMER2_ISR_CODE1_END>>
+
+    g_uart_telemetry_divider++;
+    if (g_uart_telemetry_divider >= 10)
+    {
+        g_uart_telemetry_divider = 0;
+        g_uart_telemetry_pending = 1;
+    }
+    //<<AICUBE_USER_TIMER3_ISR_CODE1_END>>
 }
 
 

@@ -628,7 +628,7 @@
 		<IntPriority>0</IntPriority>
 	</LVR>
 	<IAP>
-		<PeriEnable>0</PeriEnable>
+		<PeriEnable>1</PeriEnable>
 		<IAPEraseFunc>1</IAPEraseFunc>
 		<IAPProgramFunc>1</IAPProgramFunc>
 		<IAPReadFunc>1</IAPReadFunc>
@@ -678,6 +678,25 @@
 		<EnableGATE>0</EnableGATE>
 		<BaudrateX2>0</BaudrateX2>
 		<ClockSource>0</ClockSource>
+		<Clock12T>1</Clock12T>
+		<TimerCT>0</TimerCT>
+		<TimerMode>0</TimerMode>
+		<TimerAction>2</TimerAction>
+		<TimerInterval>2</TimerInterval>
+		<TimerUnit>0</TimerUnit>
+		<TimerReload>87</TimerReload>
+		<ClockPrescale>0</ClockPrescale>
+		<UartBaudrate>115200</UartBaudrate>
+		<CLKOPort>-1</CLKOPort>
+		<EnableInt>0</EnableInt>
+		<IntPriority>0</IntPriority>
+	</TIMER2>
+	<TIMER3>
+		<PeriEnable>1</PeriEnable>
+		<EnableCLKO>0</EnableCLKO>
+		<EnableGATE>0</EnableGATE>
+		<BaudrateX2>0</BaudrateX2>
+		<ClockSource>0</ClockSource>
 		<Clock12T>0</Clock12T>
 		<TimerCT>0</TimerCT>
 		<TimerMode>0</TimerMode>
@@ -689,25 +708,6 @@
 		<UartBaudrate>9600</UartBaudrate>
 		<CLKOPort>-1</CLKOPort>
 		<EnableInt>1</EnableInt>
-		<IntPriority>0</IntPriority>
-	</TIMER2>
-	<TIMER3>
-		<PeriEnable>0</PeriEnable>
-		<EnableCLKO>0</EnableCLKO>
-		<EnableGATE>0</EnableGATE>
-		<BaudrateX2>0</BaudrateX2>
-		<ClockSource>0</ClockSource>
-		<Clock12T>0</Clock12T>
-		<TimerCT>0</TimerCT>
-		<TimerMode>0</TimerMode>
-		<TimerAction>0</TimerAction>
-		<TimerInterval>100</TimerInterval>
-		<TimerUnit>0</TimerUnit>
-		<TimerReload>1</TimerReload>
-		<ClockPrescale>0</ClockPrescale>
-		<UartBaudrate>9600</UartBaudrate>
-		<CLKOPort>-1</CLKOPort>
-		<EnableInt>0</EnableInt>
 		<IntPriority>0</IntPriority>
 	</TIMER3>
 	<TIMER4>
@@ -749,18 +749,18 @@
 		<IntPriority>0</IntPriority>
 	</TIMER11>
 	<UART1>
-		<PeriEnable>0</PeriEnable>
+		<PeriEnable>1</PeriEnable>
 		<UartREN>1</UartREN>
 		<EnableTMO>0</EnableTMO>
 		<EnableTMOInt>0</EnableTMOInt>
-		<EnableInt>0</EnableInt>
-		<LinkPrintf>0</LinkPrintf>
+		<EnableInt>1</EnableInt>
+		<LinkPrintf>1</LinkPrintf>
 		<ModbusCRC16>0</ModbusCRC16>
 		<BaudGenerator>1</BaudGenerator>
 		<UartBit>0</UartBit>
-		<UartBaudrate>9600</UartBaudrate>
+		<UartBaudrate>115200</UartBaudrate>
 		<AutoParity>0</AutoParity>
-		<UartPort>-1</UartPort>
+		<UartPort>0</UartPort>
 		<TMOInterval>10</TMOInterval>
 		<TMOUnit>0</TMOUnit>
 		<IntPriority>0</IntPriority>
@@ -783,7 +783,7 @@
 		<P2PSource>0</P2PSource>
 		<P2PDestination>0</P2PDestination>
 		<AutoRecvData>1</AutoRecvData>
-		<RxBufferSize>16</RxBufferSize>
+		<RxBufferSize>64</RxBufferSize>
 		<RxBuffer>pu8UART1RxBuffer</RxBuffer>
 		<RxCount>u8UART1RxCount</RxCount>
 	</UART1>
@@ -1498,6 +1498,8 @@
 	<PINMAP>
 		<PinCount>256</PinCount>
 		<Pin02Map>4</Pin02Map>
+		<Pin06Map>2</Pin06Map>
+		<Pin08Map>1</Pin08Map>
 		<Pin17Map>255</Pin17Map>
 		<Pin23Map>1</Pin23Map>
 		<Pin26Map>1</Pin26Map>

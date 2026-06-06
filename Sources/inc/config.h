@@ -60,7 +60,9 @@
 
 
 #include "port.h"
+#include "iap.h"
 #include "timer.h"
+#include "uart.h"
 #include "exti.h"
 #include "adc.h"
 #include "spi.h"

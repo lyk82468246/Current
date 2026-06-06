@@ -57,6 +57,7 @@ void SPI_Init(void)
     //<<AICUBE_USER_SPI_INITIAL_BEGIN>>
     // 在此添加用户初始化代码  
     OLED_Init();
+    DAC8311_Init();
     //<<AICUBE_USER_SPI_INITIAL_END>>
 }
 

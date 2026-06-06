@@ -338,9 +338,19 @@
               <FilePath>.\Sources\port.c</FilePath>
             </File>
             <File>
+              <FileName>iap.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Sources\iap.c</FilePath>
+            </File>
+            <File>
               <FileName>timer.c</FileName>
               <FileType>1</FileType>
               <FilePath>.\Sources\timer.c</FilePath>
+            </File>
+            <File>
+              <FileName>uart.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>.\Sources\uart.c</FilePath>
             </File>
             <File>
               <FileName>exti.c</FileName>

@@ -47,10 +47,14 @@
  ┃ ┣ 📜 adc.c              # AI8051U 片内 ADC 初始化与转换函数
  ┃ ┣ 📜 spi.c              # SPI SSD1306 OLED 初始化、波形刷新与 DAC8311 软件 SPI 驱动
  ┃ ┣ 📜 i2c.c              # AI8051U 硬件 I2C 底层读写函数与 ADS1110 外挂 ADC 驱动
+ ┃ ┣ 📜 uart.c             # UART1 串口命令解析、状态回传与调参接口
+ ┃ ┣ 📜 iap.c              # IAP 参数存储、PID 参数与控制任务
  ┃ ┗ 📂 inc
  ┃   ┣ 📜 config.h         # 全局配置、引脚别名与公共头文件
  ┃   ┣ 📜 port.h           # 端口与数码管接口声明
  ┃   ┣ 📜 timer.h
+ ┃   ┣ 📜 uart.h
+ ┃   ┣ 📜 iap.h
  ┃   ┣ 📜 exti.h
  ┃   ┣ 📜 adc.h
  ┃   ┣ 📜 spi.h
@@ -67,9 +71,11 @@
 2. **多点线性校准 (Calibration)**：
    规划用于补偿硬件电阻温漂、运放失调电压和 DAC/ADC 链路误差。后续可在独立 `calibration.c/.h` 中放置 `[设定电流] -> [DAC控制字]` 映射表和线性插值算法。
 3. **曲线绘制 (Curve Draw)**：
-   当前使用 SSD1306 SPI OLED 显示 ADC 实时波形。Timer2 到期后只置位刷新标志，主循环调用 `OLED_WaveTask()` 读取 `ADC_Convert(ADC_WAVE_CHANNEL)`，将 12 位 ADC 结果映射到 0~63 行，并用 128 点环形缓存重建整屏波形。
+   当前使用 SSD1306 SPI OLED 显示 ADC 实时波形。Timer3 到期后只置位刷新标志，主循环调用 `OLED_WaveTask()` 读取 `ADC_Convert(ADC_WAVE_CHANNEL)`，将 12 位 ADC 结果映射到 0~63 行，并用 128 点环形缓存重建整屏波形。
 4. **ADC15 供电补偿**：
    当前实际电流显示使用片内 ADC0 采样检流放大后的电压，同时读取 ADC15 内部参考通道反推当前 ADC 参考电压/VCC。该机制用于补偿 3.3V/5V 供电差异和 DC-DC 慢漂，但 ADC15 的内部约 1.19V 参考本身不是精密基准，最终需要用实测 VCC 校准 `ADC_INTERNAL_REF_MV`。
+5. **串口调参与 PID 慢速修正**：
+   UART1 通过板载 CH340 连接上位机，Timer2 作为 115200 波特率发生器并已切换到 1T 以降低波特率误差。串口命令在中断中按行接收，主循环解析；PID 参数使用定点数并可通过 IAP 保存。当前串口通信和参数解析已上机验证基本正常，DAC/ADC 外设尚未到货，PID 真实闭环表现待验证。
 
 ## 🔢 数码管显示接口
 当前已经实现板载 8 位动态数码管驱动，相关代码位于 `Sources/port.c` / `Sources/inc/port.h`。
@@ -98,7 +104,7 @@
 
 *   `OLED_Init()`：在 `SPI_Init()` 的用户初始化区调用，完成 SSD1306 初始化。
 *   `OLED_WaveTask()`：读取 ADC 通道 `ADC_WAVE_CHANNEL`，更新 128 点环形波形缓存，并整屏刷新 1024 字节 OLED 显存。
-*   Timer2 当前由 AiCube 配置为 100ms 周期；Timer2 中断只设置 `g_oled_update_pending`，真正的 OLED 整屏刷新放在主循环执行，避免阻塞 1ms 数码管动态扫描。
+*   Timer3 当前由 AiCube 配置为 100ms 周期；Timer3 中断只设置 `g_oled_update_pending`，真正的 OLED 整屏刷新放在主循环执行，避免阻塞 1ms 数码管动态扫描。
 *   ADC 当前为 12 位右对齐，`0~4095` 通过 `adc >> 6` 映射到 OLED 的 `0~63` 行。
 *   注意采样混叠：100ms 采样率只有 10Hz，测试高频正弦时会出现相位翻转或伪波形。例如 25Hz 正弦每次采样跨过 2.5 个周期，显示上会呈现奇偶列近似反相。
 
@@ -123,6 +129,17 @@
 *   `ADS1110_RawToMicroVolt(raw, config)`：按当前数据率和 PGA 将原始码换算为输入电压，单位为 uV，使用整数定点计算。
 *   当前仅完成编译验证，ADS1110A0 硬件尚未到货，I2C 通信、输入极性、量程和噪声表现仍待实物验证。
 
+## 🧭 UART 调参与 PID 控制
+当前已加入 UART1 串口调参与 PID 控制框架，相关代码位于 `Sources/uart.c` / `Sources/inc/uart.h` 和 `Sources/iap.c` / `Sources/inc/iap.h`。
+
+*   UART1 使用 `P3.0/P3.1` 连接板载 CH340，串口格式为 `115200 8N1`；Timer2 作为波特率发生器，需配置为 1T，否则 40MHz 下 115200 误差过大容易乱码。
+*   串口接收缓冲区当前为 64 字节；中断只负责按行接收，主循环调用 `UART1_CommandTask()` 解析命令。
+*   支持命令：`P value` / `I value` / `D value`，也兼容 `KP value` / `KI value` / `KD value`。PID 参数使用定点数，`PID_SCALE=1000`，例如 `P 1200` 表示 `Kp=1.200`。
+*   `SAVE`：将当前 PID 参数写入 IAP；`LOAD`：从 IAP 加载已保存参数；`DEFAULT`：恢复固件内置默认参数；`?` 或 `STAT`：立即回传当前状态。
+*   Timer3 每 1 秒置位一次串口遥测标志，主循环回传一行 `STAT,set=...,act=...,err=...,kp=...,ki=...,kd=...,out=...,dac=...,adc=...,vcc=...`。
+*   `PID_ControlTask()` 在实际电流刷新后由主循环调用，根据设定电流和实际电流误差计算输出，并调用 `DAC8311_WriteCode()` 更新 DAC 码。
+*   当前仅验证了串口通信、命令解析和状态回传；由于 DAC8311 与 ADS1110A0 尚未到货，PID 对真实电流源的闭环调节效果仍待实物验证。
+
 ## 🎚 DAC8311 输出
 当前已加入 DAC8311IDCKR 的 3 线软件 SPI 驱动，相关代码位于 `Sources/spi.c` / `Sources/inc/spi.h`。
 
@@ -143,5 +160,5 @@
 
 ---
 **👨‍💻 参赛团队**：[在这里填入你的学校/团队名]
-**📅 更新日期**：2026 年 6 月 5 日
-**⚠️ 进度标记**：`[已完成] LTspice全链路仿真` -> `[已完成] AiCube底层配置、数码管动态扫描、按键防抖调节与 OLED 波形显示` -> `[待验证] DAC8311 软件 SPI 输出` -> `[待验证] ADS1110A0 I2C 精密 ADC` -> `[进行中] ADC/DAC 标定与闭环联调` -> `[待进行] 模拟板PCB打样与闭环联调`
+**📅 更新日期**：2026 年 6 月 6 日
+**⚠️ 进度标记**：`[已完成] LTspice全链路仿真` -> `[已完成] AiCube底层配置、数码管动态扫描、按键防抖调节、OLED 波形显示与 UART 调参框架` -> `[待验证] DAC8311 软件 SPI 输出` -> `[待验证] ADS1110A0 I2C 精密 ADC` -> `[待验证] PID 真实闭环调节` -> `[进行中] ADC/DAC 标定与闭环联调` -> `[待进行] 模拟板PCB打样与闭环联调`
