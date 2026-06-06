@@ -44,6 +44,9 @@
 #define SSD1315_BUFFER_SIZE             (SSD1315_WIDTH * SSD1315_PAGE_COUNT)
 #define SSD1315_WAVE_SAMPLE_INTERVAL_MS 5
 #define SSD1315_USE_I2C_DMA             1
+#define SSD1315_SCOPE_MODE_GLOBAL       0
+#define SSD1315_SCOPE_MODE_ZOOM         1
+#define SSD1315_SCOPE_ZOOM_MIN_SPAN     64
 
 #define I2C_DMARXSIZE                   1024
 //<<AICUBE_USER_DEFINE_END>>
@@ -89,6 +92,7 @@ void SSD1315_ClearBuffer(void);
 BOOL SSD1315_Flush(void);
 void SSD1315_AddSample(uint16_t adc_value);
 void SSD1315_WaveTask(void);
+void SSD1315_ToggleScopeMode(void);
 BOOL SSD1315_ShowTestPattern(uint8_t pattern);
 void SSD1315_ResumeWave(void);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>

@@ -23,11 +23,15 @@
 #define KEY_DEBOUNCE_ADD_FLAG       0x01
 #define KEY_DEBOUNCE_SUB_FLAG       0x02
 #define KEY_ADD_LONG_TICKS          50
+#define KEY_SUB_LONG_TICKS          50
 
 static volatile uint8_t g_key_debounce_flags = 0;
 static uint8_t g_add_tracking = 0;
 static uint8_t g_add_press_ticks = 0;
 static uint8_t g_add_long_fired = 0;
+static uint8_t g_sub_tracking = 0;
+static uint8_t g_sub_press_ticks = 0;
+static uint8_t g_sub_long_fired = 0;
 
 static void KeyDebounceStart(uint8_t flag);
 static void CurrentAdjust(uint8_t increase);
@@ -157,9 +161,41 @@ void EXTI_KeyDebounceProcess(void)
         restart_timer = 1;
     }
 
-    if ((flags & KEY_DEBOUNCE_SUB_FLAG) && (SUB == 0))
+    if (g_sub_tracking)
     {
-        CurrentAdjust(0);
+        if (SUB == 0)
+        {
+            if (g_sub_press_ticks < 255)
+            {
+                g_sub_press_ticks++;
+            }
+
+            if (!g_sub_long_fired && (g_sub_press_ticks >= KEY_SUB_LONG_TICKS))
+            {
+                SSD1315_ToggleScopeMode();
+                g_sub_long_fired = 1;
+            }
+
+            restart_timer = 1;
+        }
+        else
+        {
+            if (!g_sub_long_fired)
+            {
+                CurrentAdjust(0);
+            }
+
+            g_sub_tracking = 0;
+            g_sub_press_ticks = 0;
+            g_sub_long_fired = 0;
+        }
+    }
+    else if ((flags & KEY_DEBOUNCE_SUB_FLAG) && (SUB == 0))
+    {
+        g_sub_tracking = 1;
+        g_sub_press_ticks = 1;
+        g_sub_long_fired = 0;
+        restart_timer = 1;
     }
 
     if (restart_timer)
