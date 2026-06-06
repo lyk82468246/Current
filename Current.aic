@@ -949,7 +949,7 @@
 		<EnablePWMTrig>0</EnablePWMTrig>
 		<EnableDMA>0</EnableDMA>
 		<EnableDMAInt>0</EnableDMAInt>
-		<EnableInt>0</EnableInt>
+		<EnableInt>1</EnableInt>
 		<DMAAmount>16</DMAAmount>
 		<DMARepeat>0</DMARepeat>
 		<DMAInterval>0</DMAInterval>
@@ -996,12 +996,12 @@
 		<TMOInterval>10</TMOInterval>
 		<TMOUnit>0</TMOUnit>
 		<IntPriority>0</IntPriority>
-		<EnableDMA>0</EnableDMA>
+		<EnableDMA>1</EnableDMA>
 		<EnableDMAInt>0</EnableDMAInt>
 		<EnableDMAAutoSS>0</EnableDMAAutoSS>
-		<DMAAmount>16</DMAAmount>
+		<DMAAmount>1024</DMAAmount>
 		<DMAInterval>0</DMAInterval>
-		<DMAMode>2</DMAMode>
+		<DMAMode>0</DMAMode>
 		<DMAAutoSSPort>0</DMAAutoSSPort>
 		<DMAIntPriority>0</DMAIntPriority>
 		<DMABusPriority>0</DMABusPriority>
@@ -1026,13 +1026,13 @@
 		<SlaveAddress>0</SlaveAddress>
 		<I2CPort>1</I2CPort>
 		<I2CMode>1</I2CMode>
-		<I2CClockDivider>0</I2CClockDivider>
+		<I2CClockDivider>32</I2CClockDivider>
 		<TMOInterval>10</TMOInterval>
 		<TMOUnit>0</TMOUnit>
 		<IntPriority>0</IntPriority>
-		<EnableTxDMA>0</EnableTxDMA>
+		<EnableTxDMA>1</EnableTxDMA>
 		<EnableTxDMAInt>0</EnableTxDMAInt>
-		<TxDMAAmount>16</TxDMAAmount>
+		<TxDMAAmount>1024</TxDMAAmount>
 		<TxDMAInterval>0</TxDMAInterval>
 		<TxDMAIntPriority>0</TxDMAIntPriority>
 		<TxDMABusPriority>0</TxDMABusPriority>

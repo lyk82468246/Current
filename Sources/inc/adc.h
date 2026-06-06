@@ -31,6 +31,7 @@
 void ADC_Init(void);
 uint16_t ADC_Convert(uint8_t ch);
 
+extern BOOL fADCConverted;
 
 
 //<<AICUBE_USER_EXTERNAL_DECLARE_BEGIN>>

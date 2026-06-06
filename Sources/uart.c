@@ -29,6 +29,8 @@ static BOOL UART1_IsCommandEnd(char ch);
 static BOOL UART1_ParseValue(char *str, int32_t *value);
 static BOOL UART1_MatchCommand(char *str, char *cmd);
 static void UART1_ProcessCommand(char *line);
+static BOOL UART1_ProcessOLEDCommand(char *arg);
+static BOOL UART1_ShowOLEDPattern(uint8_t pattern, uint8_t use_pio);
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -285,6 +287,16 @@ static void UART1_ProcessCommand(char *line)
         return;
     }
 
+    if (UART1_MatchCommand(line, "OLED"))
+    {
+        arg = UART1_SkipSpace(line + 4);
+        if (!UART1_ProcessOLEDCommand(arg))
+        {
+            printf("ERR,OLED\r\n");
+        }
+        return;
+    }
+
     if (UART1_MatchCommand(line, "SAVE"))
     {
         if (PID_SaveToIAP())
@@ -354,6 +366,205 @@ static void UART1_ProcessCommand(char *line)
     }
 
     printf("ERR,CMD\r\n");
+}
+
+static BOOL UART1_ProcessOLEDCommand(char *arg)
+{
+    uint8_t use_pio;
+
+    use_pio = 0;
+    arg = UART1_SkipSpace(arg);
+    if (UART1_MatchCommand(arg, "PIO"))
+    {
+        use_pio = 1;
+        arg = UART1_SkipSpace(arg + 3);
+    }
+    else if (UART1_MatchCommand(arg, "DMA"))
+    {
+        arg = UART1_SkipSpace(arg + 3);
+    }
+
+    if (UART1_MatchCommand(arg, "PROBE"))
+    {
+        printf("OLED,3C=%u,3D=%u\r\n",
+               SSD1315_Probe(0x3c) ? 1 : 0,
+               SSD1315_Probe(0x3d) ? 1 : 0);
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "ADDR3C"))
+    {
+        SSD1315_SetAddress(0x3c);
+        if (SSD1315_Init())
+        {
+            printf("OK,OLED=ADDR3C\r\n");
+        }
+        else
+        {
+            printf("ERR,OLED=ADDR3C\r\n");
+        }
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "ADDR3D"))
+    {
+        SSD1315_SetAddress(0x3d);
+        if (SSD1315_Init())
+        {
+            printf("OK,OLED=ADDR3D\r\n");
+        }
+        else
+        {
+            printf("ERR,OLED=ADDR3D\r\n");
+        }
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "INIT"))
+    {
+        if (SSD1315_Init())
+        {
+            printf("OK,OLED=INIT\r\n");
+        }
+        else
+        {
+            printf("ERR,OLED=INIT\r\n");
+        }
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "COM12"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "COM02"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "MUX64"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "MUX32"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "SCAN1"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "SCAN0"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "SEG1"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "SEG0"))
+    {
+        printf("ERR,OLED=I2C\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "EMPTY") || UART1_MatchCommand(arg, "CLEAR"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_EMPTY, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,EMPTY\r\n" : "OK,OLED=EMPTY\r\n") :
+               "ERR,OLED=EMPTY\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "FULL") || UART1_MatchCommand(arg, "FILL"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_FULL, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,FULL\r\n" : "OK,OLED=FULL\r\n") :
+               "ERR,OLED=FULL\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "ODDROW") || UART1_MatchCommand(arg, "ODDROWS"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_ODD_ROWS, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,ODDROWS\r\n" : "OK,OLED=ODDROWS\r\n") :
+               "ERR,OLED=ODDROWS\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "EVENROW") || UART1_MatchCommand(arg, "EVENROWS"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_EVEN_ROWS, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,EVENROWS\r\n" : "OK,OLED=EVENROWS\r\n") :
+               "ERR,OLED=EVENROWS\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "ODDCOL") || UART1_MatchCommand(arg, "ODDCOLS"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_ODD_COLS, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,ODDCOLS\r\n" : "OK,OLED=ODDCOLS\r\n") :
+               "ERR,OLED=ODDCOLS\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "EVENCOL") || UART1_MatchCommand(arg, "EVENCOLS"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_EVEN_COLS, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,EVENCOLS\r\n" : "OK,OLED=EVENCOLS\r\n") :
+               "ERR,OLED=EVENCOLS\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "SINE") || UART1_MatchCommand(arg, "SIN"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_SINE, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,SINE\r\n" : "OK,OLED=SINE\r\n") :
+               "ERR,OLED=SINE\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "SQUARE") || UART1_MatchCommand(arg, "SQ"))
+    {
+        printf(UART1_ShowOLEDPattern(OLED_TEST_SQUARE, use_pio) ?
+               (use_pio ? "OK,OLED=PIO,SQUARE\r\n" : "OK,OLED=SQUARE\r\n") :
+               "ERR,OLED=SQUARE\r\n");
+        return TRUE;
+    }
+
+    if (UART1_MatchCommand(arg, "WAVE") || UART1_MatchCommand(arg, "RUN"))
+    {
+        SSD1315_ResumeWave();
+        printf("OK,OLED=WAVE\r\n");
+        return TRUE;
+    }
+
+    return FALSE;
+}
+
+static BOOL UART1_ShowOLEDPattern(uint8_t pattern, uint8_t use_pio)
+{
+    if (use_pio)
+    {
+        return SSD1315_ShowTestPattern(pattern);
+    }
+    else
+    {
+        return SSD1315_ShowTestPattern(pattern);
+    }
 }
 
 void UART1_CommandTask(void)

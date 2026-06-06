@@ -58,7 +58,7 @@ void main(void)
             g_oled_update_pending = 0;
             EnableGlobalInt();
 
-            OLED_WaveTask();
+            SSD1315_WaveTask();
         }
 
         if (g_actual_current_update_pending)

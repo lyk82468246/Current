@@ -24,6 +24,10 @@ volatile uint8_t g_oled_update_pending = 0;
 volatile uint8_t g_actual_current_update_pending = 0;
 volatile uint8_t g_uart_telemetry_pending = 0;
 
+extern void ADC_StartWaveSample(void);
+
+static uint8_t g_oled_sample_divider = 0;
+static uint8_t g_oled_refresh_divider = 0;
 static uint8_t g_uart_telemetry_divider = 0;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
@@ -139,7 +143,21 @@ void TIMER0_ISR(void) interrupt TMR0_VECTOR
 {
     //<<AICUBE_USER_TIMER0_ISR_CODE1_BEGIN>>
     // 在此添加中断函数用户代码
-    SEG_ScanNext();  
+    SEG_ScanNext();
+
+    g_oled_sample_divider++;
+    if (g_oled_sample_divider >= SSD1315_WAVE_SAMPLE_INTERVAL_MS)
+    {
+        g_oled_sample_divider = 0;
+        ADC_StartWaveSample();
+    }
+
+    g_oled_refresh_divider++;
+    if (g_oled_refresh_divider >= 50)
+    {
+        g_oled_refresh_divider = 0;
+        g_oled_update_pending = 1;
+    }
     //<<AICUBE_USER_TIMER0_ISR_CODE1_END>>
 }
 
@@ -166,7 +184,6 @@ void TIMER3_ISR(void) interrupt TMR3_VECTOR
     //<<AICUBE_USER_TIMER3_ISR_CODE1_BEGIN>>
     // 在此添加中断函数用户代码  
     TIMER3_ClearFlag();
-    g_oled_update_pending = 1;
     g_actual_current_update_pending = 1;
 
     g_uart_telemetry_divider++;

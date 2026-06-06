@@ -22,9 +22,12 @@
 // 在此添加用户全局变量定义、用户宏定义以及函数声明  
 volatile uint16_t g_adc_vcc_mV = 0;
 volatile uint16_t g_actual_current_adc = 0;
+static volatile uint8_t g_adc_wave_sampling = 0;
+static volatile uint8_t g_adc_user_convert_busy = 0;
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
+BOOL fADCConverted;                     //ADC转换完成标志
 
 ////////////////////////////////////////
 // ADC初始化函数
@@ -42,6 +45,10 @@ void ADC_Init(void)
     ADC_SetSampleDutyCycles(ADC_SMPCYC); //设置ADC通道采样时间
 
     ADC_DisableETR();                   //禁止ADC外部触发功能
+
+    ADC_SetIntPriority(0);              //设置中断为最低优先级
+    ADC_EnableInt();                    //使能ADC中断
+    fADCConverted = 0;                  //初始化转换结束标志
 
     ADC_ActiveChannel(0);               //选择ADC通道
     ADC_Enable();                       //使能ADC功能
@@ -62,16 +69,51 @@ uint16_t ADC_Convert(uint8_t ch)
 
     ADC_ActiveChannel(ch);              //选择ADC通道
     ADC_Start();                        //开始ADC转换
-    while (!ADC_CheckFlag());           //等待ADC转换完成
-    ADC_ClearFlag();                    //清除ADC转换完成中断标志
+    while (!fADCConverted);             //等待ADC转换完成
+    fADCConverted = 0;                  //清除ADC转换结束标志
     res = ADC_ReadResult();             //读取ADC转换结果
 
     return res;                         //返回ADC结果
 }
 
 
+////////////////////////////////////////
+// ADC中断服务程序
+// 入口参数: 无
+// 函数返回: 无
+////////////////////////////////////////
+void ADC_ISR(void) interrupt ADC_VECTOR
+{
+    //<<AICUBE_USER_ADC_ISR_CODE1_BEGIN>>
+    if (g_adc_wave_sampling)
+    {
+        ADC_ClearFlag();
+        SSD1315_AddSample(ADC_ReadResult());
+        g_adc_wave_sampling = 0;
+        return;
+    }
+
+    // 在此添加中断函数用户代码  
+    ADC_ClearFlag();                    //清除ADC转换完成中断标志
+    fADCConverted = 1;                  //设置转换结束标志
+    //<<AICUBE_USER_ADC_ISR_CODE1_END>>
+}
+
 
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_BEGIN>>
+void ADC_StartWaveSample(void)
+{
+    if (g_adc_wave_sampling || g_adc_user_convert_busy)
+    {
+        return;
+    }
+
+    fADCConverted = 0;
+    g_adc_wave_sampling = 1;
+    ADC_ActiveChannel(ADC_WAVE_CHANNEL);
+    ADC_Start();
+}
+
 // 在此添加用户函数实现代码  
 uint16_t ADC_ReadVccMilliVolt(void)
 {
@@ -120,9 +162,16 @@ void ADC_UpdateActualCurrentTask(void)
     uint16_t adc_value;
     uint16_t current_mA;
 
+    if (g_adc_wave_sampling || g_adc_user_convert_busy)
+    {
+        return;
+    }
+    g_adc_user_convert_busy = 1;
+
     vcc_mV = ADC_ReadVccMilliVolt();
     if (vcc_mV == 0)
     {
+        g_adc_user_convert_busy = 0;
         return;
     }
 
@@ -132,6 +181,7 @@ void ADC_UpdateActualCurrentTask(void)
     g_adc_vcc_mV = vcc_mV;
     g_actual_current_adc = adc_value;
     SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, current_mA);
+    g_adc_user_convert_busy = 0;
 }
 
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>

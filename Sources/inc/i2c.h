@@ -35,9 +35,22 @@
 #define ADS1110_CONFIG_DEFAULT          (ADS1110_CFG_CONTINUOUS | ADS1110_CFG_DR_15SPS_16BIT | ADS1110_CFG_PGA_1)
 #define ADS1110_CONFIG_SINGLE_16BIT     (ADS1110_CFG_ST_DRDY | ADS1110_CFG_SINGLE | ADS1110_CFG_DR_15SPS_16BIT | ADS1110_CFG_PGA_1)
 #define ADS1110_IsDataReady(config)     (((config) & ADS1110_CFG_ST_DRDY) == 0)
+
+#define SSD1315_I2C_ADDR                0x3c
+#define SSD1315_SLAW                    ((SSD1315_I2C_ADDR << 1) | 0)
+#define SSD1315_WIDTH                   128
+#define SSD1315_HEIGHT                  64
+#define SSD1315_PAGE_COUNT              8
+#define SSD1315_BUFFER_SIZE             (SSD1315_WIDTH * SSD1315_PAGE_COUNT)
+#define SSD1315_WAVE_SAMPLE_INTERVAL_MS 5
+#define SSD1315_USE_I2C_DMA             1
+
+#define I2C_DMARXSIZE                   1024
 //<<AICUBE_USER_DEFINE_END>>
 
 
+#define I2C_DMATXSIZE           1024    //I2C DMA发送缓冲区大小
+#define I2C_DMAITV              0       //I2C DMA发送/接收字节间隔时间（系统时钟）
 #define I2C_SLA             0           //I2C 从机地址
 #define I2C_SLAR                ((I2C_SLA << 1) | 1) //I2C 从机读地址
 #define I2C_SLAW                ((I2C_SLA << 1)) //I2C 从机写地址
@@ -50,9 +63,12 @@ void I2C_MasterStop(void);
 BOOL I2C_MasterStartSendCode(uint8_t dat);
 BOOL I2C_MasterSendByte(uint8_t dat);
 uint8_t I2C_MasterReadByte(BOOL ack);
-void I2C_ReadAT24C02(uint8_t addr, uint8_t *dat, uint8_t size);
-void I2C_WriteAT24C02(uint8_t addr, uint8_t *dat, uint8_t size);
+void I2C_DMA_MasterTriggerSend(uint16_t cnt);
+void I2C_DMA_MasterTriggerRead(uint16_t cnt);
+void I2C_DMA_ReadAT24C02(uint8_t addr, uint8_t *dat, uint8_t size);
+void I2C_DMA_WriteAT24C02(uint8_t addr, uint8_t *dat, uint8_t size);
 
+extern uint8_t xdata pu8I2CDMATxBuffer[I2C_DMATXSIZE];
 
 
 //<<AICUBE_USER_EXTERNAL_DECLARE_BEGIN>>
@@ -65,6 +81,16 @@ BOOL ADS1110_StartSingle(uint8_t config);
 BOOL ADS1110_ReadRaw(int16_t *raw, uint8_t *config);
 BOOL ADS1110_ReadRaw16(int16_t *raw);
 int32_t ADS1110_RawToMicroVolt(int16_t raw, uint8_t config);
+
+BOOL SSD1315_Init(void);
+BOOL SSD1315_Probe(uint8_t addr);
+void SSD1315_SetAddress(uint8_t addr);
+void SSD1315_ClearBuffer(void);
+BOOL SSD1315_Flush(void);
+void SSD1315_AddSample(uint16_t adc_value);
+void SSD1315_WaveTask(void);
+BOOL SSD1315_ShowTestPattern(uint8_t pattern);
+void SSD1315_ResumeWave(void);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>
 
 
