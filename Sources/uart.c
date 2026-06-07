@@ -251,7 +251,7 @@ static BOOL UART1_MatchCommand(char *str, char *cmd)
 
 void UART1_SendStatus(void)
 {
-    printf("STAT,set=%u,act=%u,err=%ld,kp=%ld,ki=%ld,kd=%ld,out=%ld,dac=%u,adc=%u,vcc=%u\r\n",
+    printf("STAT,set=%u,act=%u,err=%ld,kp=%ld,ki=%ld,kd=%ld,out=%ld,ff=%u,dac=%u,piden=%u,adc=%u,vcc=%u\r\n",
            g_current_set_mA,
            g_actual_current_mA,
            (long)g_pid_error,
@@ -259,7 +259,9 @@ void UART1_SendStatus(void)
            (long)g_pid_ki,
            (long)g_pid_kd,
            (long)g_pid_output,
+           g_dac_feedforward_code,
            g_dac_code,
+           (uint16_t)g_pid_enabled,
            g_actual_current_adc,
            g_adc_vcc_mV);
 }
@@ -293,6 +295,82 @@ static void UART1_ProcessCommand(char *line)
         if (!UART1_ProcessOLEDCommand(arg))
         {
             printf("ERR,OLED\r\n");
+        }
+        return;
+    }
+
+    if (UART1_MatchCommand(line, "PID"))
+    {
+        arg = UART1_SkipSpace(line + 3);
+        if (UART1_MatchCommand(arg, "ON") || UART1_MatchCommand(arg, "1"))
+        {
+            PID_SetEnabled(1);
+            printf("OK,PID=ON\r\n");
+        }
+        else if (UART1_MatchCommand(arg, "OFF") || UART1_MatchCommand(arg, "0"))
+        {
+            PID_SetEnabled(0);
+            printf("OK,PID=OFF\r\n");
+        }
+        else if ((*arg == 0) || UART1_MatchCommand(arg, "?"))
+        {
+            printf("PID=%u\r\n", (uint16_t)g_pid_enabled);
+        }
+        else
+        {
+            printf("ERR,PID\r\n");
+        }
+        return;
+    }
+
+    if (UART1_MatchCommand(line, "PIDON"))
+    {
+        PID_SetEnabled(1);
+        printf("OK,PID=ON\r\n");
+        return;
+    }
+
+    if (UART1_MatchCommand(line, "PIDOFF"))
+    {
+        PID_SetEnabled(0);
+        printf("OK,PID=OFF\r\n");
+        return;
+    }
+
+    if (UART1_MatchCommand(line, "FF") || UART1_MatchCommand(line, "FFABS"))
+    {
+        arg = UART1_SkipSpace(line + (UART1_MatchCommand(line, "FFABS") ? 5 : 2));
+        if ((*arg == 0) || UART1_MatchCommand(arg, "?"))
+        {
+            printf("FF,mode=%u,set=%u,code=%u\r\n",
+                   (uint16_t)g_current_mode,
+                   g_current_set_mA,
+                   FF_GetCurrentCode());
+        }
+        else if (UART1_ParseValue(arg, &value) &&
+                 (value >= 0) &&
+                 (value <= DAC8311_MAX_CODE) &&
+                 FF_SetCurrentCode((uint16_t)value))
+        {
+            printf("OK,FF=%u\r\n", FF_GetCurrentCode());
+        }
+        else
+        {
+            printf("ERR,FF\r\n");
+        }
+        return;
+    }
+
+    if (UART1_MatchCommand(line, "FFREL"))
+    {
+        arg = UART1_SkipSpace(line + 5);
+        if (UART1_ParseValue(arg, &value) && FF_AdjustCurrentCode(value))
+        {
+            printf("OK,FF=%u\r\n", FF_GetCurrentCode());
+        }
+        else
+        {
+            printf("ERR,FFREL\r\n");
         }
         return;
     }

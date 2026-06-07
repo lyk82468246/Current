@@ -36,6 +36,7 @@ void main(void)
     //<<AICUBE_USER_MAIN_INITIAL_BEGIN>>
     // 在此添加用户主函数初始化代码  
     uint16_t display_current_mA;
+    uint8_t display_mode;
     //<<AICUBE_USER_MAIN_INITIAL_END>>
 
     SYS_Init();
@@ -51,6 +52,14 @@ void main(void)
         //<<AICUBE_USER_MAIN_LOOP_BEGIN>>
         // 在此添加主函数中用户主循环代码  
         UART1_CommandTask();
+
+        DisableGlobalInt();
+        display_current_mA = g_current_set_mA;
+        display_mode = g_current_mode;
+        EnableGlobalInt();
+
+        PID_SetpointTask(display_mode, display_current_mA);
+        SEG_UpdateMemory(SEG_GROUP_SET_CURRENT, display_current_mA);
 
         if (g_oled_update_pending)
         {
@@ -82,11 +91,6 @@ void main(void)
             UART1_SendStatus();
         }
 
-        DisableGlobalInt();
-        display_current_mA = g_current_set_mA;
-        EnableGlobalInt();
-
-        SEG_UpdateMemory(SEG_GROUP_SET_CURRENT, display_current_mA);
         //<<AICUBE_USER_MAIN_LOOP_END>>
     }
 }

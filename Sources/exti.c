@@ -222,9 +222,9 @@ static void CurrentAdjust(uint8_t increase)
 
     if (increase)
     {
-        if (g_current_set_mA < 100)
+        if (g_current_set_mA < step_mA)
         {
-            g_current_set_mA = 100;
+            g_current_set_mA = step_mA;
         }
         else
         {
@@ -238,16 +238,16 @@ static void CurrentAdjust(uint8_t increase)
     }
     else
     {
-        if (g_current_set_mA <= 100)
+        if (g_current_set_mA <= step_mA)
         {
             g_current_set_mA = 0;
         }
         else
         {
             g_current_set_mA -= step_mA;
-            if (g_current_set_mA < 100)
+            if (g_current_set_mA < step_mA)
             {
-                g_current_set_mA = 100;
+                g_current_set_mA = step_mA;
             }
         }
     }
