@@ -118,8 +118,8 @@ void TIMER2_Init(void)
 ////////////////////////////////////////
 void TIMER3_Init(void)
 {
-#define T3_PSCR                 (5)
-#define T3_RELOAD               (65536 - (float)SYSCLK / 12 / (T3_PSCR + 1) * 100 / 1000) //定时周期100毫秒
+#define T3_PSCR                 (3)
+#define T3_RELOAD               (65536 - (float)SYSCLK / 12 / (T3_PSCR + 1) * 67 / 1000) //定时周期67毫秒
 
     TIMER3_TimerMode();                 //设置定时器3为定时模式
     TIMER3_12TMode();                   //设置定时器3为12T模式

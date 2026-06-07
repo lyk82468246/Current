@@ -20,10 +20,13 @@
 #define CURRENT_SENSE_RES_MOHM          100UL
 #define CURRENT_AMP_GAIN_NUM            101UL
 #define CURRENT_AMP_GAIN_DEN            10UL
+#define INA250A2_UV_PER_MA              500UL
+#define INA250_ZERO_OFFSET_UV           0L
 
 #define CURRENT_SAMPLE_SOURCE_INTERNAL  0
 #define CURRENT_SAMPLE_SOURCE_ADS1110   1
-#define CURRENT_SAMPLE_SOURCE           CURRENT_SAMPLE_SOURCE_ADS1110
+#define CURRENT_SAMPLE_SOURCE_INA250_ADS1110 2
+#define CURRENT_SAMPLE_SOURCE           CURRENT_SAMPLE_SOURCE_INA250_ADS1110
 
 //<<AICUBE_USER_DEFINE_END>>
 
@@ -46,6 +49,8 @@ extern volatile uint16_t g_actual_current_adc;
 
 uint16_t ADC_ReadVccMilliVolt(void);
 uint16_t ADC_ConvertCurrentMilliAmp(uint16_t adc_value, uint16_t vcc_mV);
+uint16_t ADC_ConvertINA250MicroVoltToMilliAmp(int32_t input_uV);
+uint16_t ADC_ConvertINA250MicroVoltToDeciMilliAmp(int32_t input_uV);
 BOOL ADC_UpdateActualCurrentTask(void);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>
 

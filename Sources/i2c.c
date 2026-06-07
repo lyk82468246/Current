@@ -28,10 +28,13 @@
 static uint8_t xdata pu8I2CDMARxBuffer[I2C_DMARXSIZE];
 static uint8_t xdata g_ssd1315_buffer[SSD1315_BUFFER_SIZE];
 static uint16_t xdata g_ssd1315_wave_adc[SSD1315_WIDTH];
+static uint16_t xdata g_ssd1315_wave_current_dmA[SSD1315_WIDTH];
 static uint8_t g_ssd1315_i2c_addr = SSD1315_I2C_ADDR;
 static uint8_t g_ssd1315_wave_head = 0;
+static uint8_t g_ssd1315_current_head = 0;
 static uint8_t g_ssd1315_test_active = 0;
-static volatile uint8_t g_ssd1315_scope_mode = SSD1315_SCOPE_MODE_GLOBAL;
+static volatile uint8_t g_ssd1315_focus_dirty = 1;
+static volatile uint8_t g_ssd1315_scope_mode = SSD1315_SCOPE_MODE_ZOOM;
 static uint8_t code g_ssd1315_sine32[32] =
 {
     32, 38, 44, 49, 54, 58, 61, 63,
@@ -47,17 +50,19 @@ static uint8_t SSD1315_GetSLAW(void);
 static void SSD1315_DrawPoint(uint8_t x, uint8_t y);
 static void SSD1315_DrawVerticalLine(uint8_t x, uint8_t y0, uint8_t y1);
 static void SSD1315_RenderWave(void);
+static void SSD1315_RenderGlobalWave(void);
+static void SSD1315_RenderFocusWave(void);
 static void SSD1315_BuildTestPattern(uint8_t pattern);
 static uint8_t SSD1315_MapGlobal(uint16_t adc_value);
 static uint8_t SSD1315_MapZoom(uint16_t adc_value, uint16_t lower, uint16_t upper);
-static void SSD1315_DrawScopeOverlay(uint16_t lower, uint16_t upper);
+static void SSD1315_DrawScopeOverlay(uint16_t lower, uint16_t upper, uint8_t focus_mode);
 static void SSD1315_DrawTextXor(uint8_t x, uint8_t y, char *text);
 static void SSD1315_InvertPixel(uint8_t x, uint8_t y);
 static uint8_t SSD1315_GetFontRow(char c, uint8_t row);
 static uint8_t SSD1315_TextWidth(char *text);
 static uint32_t SSD1315_AdcToCurrentMicroAmp(uint16_t adc_value);
 static void SSD1315_FormatCurrent(char *buf, uint32_t current_uA);
-static void SSD1315_FormatTimebase(char *buf);
+static void SSD1315_FormatTimebase(char *buf, uint8_t focus_mode);
 static char *SSD1315_AppendU16(char *buf, uint16_t value);
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
@@ -585,8 +590,10 @@ BOOL SSD1315_Init(void)
     for (i = 0; i < SSD1315_WIDTH; i++)
     {
         g_ssd1315_wave_adc[i] = 2048;
+        g_ssd1315_wave_current_dmA[i] = 0;
     }
     g_ssd1315_wave_head = 0;
+    g_ssd1315_current_head = 0;
     if (!SSD1315_Flush()) ok = FALSE;
     if (!SSD1315_WriteCommand(0xAF)) ok = FALSE;
 
@@ -667,64 +674,29 @@ static void SSD1315_DrawVerticalLine(uint8_t x, uint8_t y0, uint8_t y1)
 
 static void SSD1315_RenderWave(void)
 {
+    if (g_ssd1315_scope_mode == SSD1315_SCOPE_MODE_ZOOM)
+    {
+        SSD1315_RenderFocusWave();
+    }
+    else
+    {
+        SSD1315_RenderGlobalWave();
+    }
+}
+
+static void SSD1315_RenderGlobalWave(void)
+{
     uint8_t x;
     uint8_t last_y;
     uint8_t y;
     uint16_t src;
-    uint16_t lower;
-    uint16_t upper;
     uint16_t sample;
-    uint16_t mean;
-    uint16_t span;
-    uint32_t sum;
-    uint32_t dev_sum;
 
     SSD1315_ClearBuffer();
 
-    lower = 0;
-    upper = 4095;
-    if (g_ssd1315_scope_mode == SSD1315_SCOPE_MODE_ZOOM)
-    {
-        sum = 0;
-        for (x = 0; x < SSD1315_WIDTH; x++)
-        {
-            sum += g_ssd1315_wave_adc[x];
-        }
-        mean = (uint16_t)(sum / SSD1315_WIDTH);
-
-        dev_sum = 0;
-        for (x = 0; x < SSD1315_WIDTH; x++)
-        {
-            sample = g_ssd1315_wave_adc[x];
-            dev_sum += (sample > mean) ? (sample - mean) : (mean - sample);
-        }
-
-        span = (uint16_t)((dev_sum / SSD1315_WIDTH) * 8);
-        if (span < SSD1315_SCOPE_ZOOM_MIN_SPAN)
-        {
-            span = SSD1315_SCOPE_ZOOM_MIN_SPAN;
-        }
-
-        if (mean > (span / 2))
-        {
-            lower = (uint16_t)(mean - (span / 2));
-        }
-        else
-        {
-            lower = 0;
-        }
-
-        upper = (uint16_t)(lower + span);
-        if (upper > 4095)
-        {
-            upper = 4095;
-            lower = (upper > span) ? (uint16_t)(upper - span) : 0;
-        }
-    }
-
     src = g_ssd1315_wave_head;
     sample = g_ssd1315_wave_adc[(uint8_t)src];
-    last_y = (g_ssd1315_scope_mode == SSD1315_SCOPE_MODE_ZOOM) ? SSD1315_MapZoom(sample, lower, upper) : SSD1315_MapGlobal(sample);
+    last_y = SSD1315_MapGlobal(sample);
     for (x = 0; x < SSD1315_WIDTH; x++)
     {
         src = (uint16_t)g_ssd1315_wave_head + x;
@@ -734,12 +706,100 @@ static void SSD1315_RenderWave(void)
         }
 
         sample = g_ssd1315_wave_adc[(uint8_t)src];
-        y = (g_ssd1315_scope_mode == SSD1315_SCOPE_MODE_ZOOM) ? SSD1315_MapZoom(sample, lower, upper) : SSD1315_MapGlobal(sample);
+        y = SSD1315_MapGlobal(sample);
         SSD1315_DrawVerticalLine(x, last_y, y);
         last_y = y;
     }
 
-    SSD1315_DrawScopeOverlay(lower, upper);
+    SSD1315_DrawScopeOverlay(0, 4095, 0);
+}
+
+static void SSD1315_RenderFocusWave(void)
+{
+    uint8_t x;
+    uint8_t last_y;
+    uint8_t y;
+    uint16_t src;
+    uint16_t lower;
+    uint16_t upper;
+    uint16_t sample;
+    uint16_t min_sample;
+    uint16_t max_sample;
+    uint16_t mean;
+    uint16_t span;
+    uint32_t sum;
+    uint16_t margin;
+
+    SSD1315_ClearBuffer();
+
+    min_sample = 65535U;
+    max_sample = 0;
+    sum = 0;
+    for (x = 0; x < SSD1315_WIDTH; x++)
+    {
+        sample = g_ssd1315_wave_current_dmA[x];
+        sum += sample;
+        if (sample < min_sample)
+        {
+            min_sample = sample;
+        }
+        if (sample > max_sample)
+        {
+            max_sample = sample;
+        }
+    }
+
+    mean = (uint16_t)(sum / SSD1315_WIDTH);
+    span = (max_sample > min_sample) ? (uint16_t)(max_sample - min_sample) : 0;
+    if (span < SSD1315_SCOPE_ZOOM_MIN_DMA)
+    {
+        span = SSD1315_SCOPE_ZOOM_MIN_DMA;
+    }
+
+    margin = (uint16_t)(span / 8);
+    if (margin < 1)
+    {
+        margin = 1;
+    }
+    span = (uint16_t)(span + (margin * 2));
+
+    if (mean > (span / 2))
+    {
+        lower = (uint16_t)(mean - (span / 2));
+    }
+    else
+    {
+        lower = 0;
+    }
+
+    if ((65535U - lower) < span)
+    {
+        upper = 65535U;
+        lower = (upper > span) ? (uint16_t)(upper - span) : 0;
+    }
+    else
+    {
+        upper = (uint16_t)(lower + span);
+    }
+
+    src = g_ssd1315_current_head;
+    sample = g_ssd1315_wave_current_dmA[(uint8_t)src];
+    last_y = SSD1315_MapZoom(sample, lower, upper);
+    for (x = 0; x < SSD1315_WIDTH; x++)
+    {
+        src = (uint16_t)g_ssd1315_current_head + x;
+        if (src >= SSD1315_WIDTH)
+        {
+            src -= SSD1315_WIDTH;
+        }
+
+        sample = g_ssd1315_wave_current_dmA[(uint8_t)src];
+        y = SSD1315_MapZoom(sample, lower, upper);
+        SSD1315_DrawVerticalLine(x, last_y, y);
+        last_y = y;
+    }
+
+    SSD1315_DrawScopeOverlay(lower, upper, 1);
 }
 
 static uint8_t SSD1315_MapGlobal(uint16_t adc_value)
@@ -775,7 +835,7 @@ static uint8_t SSD1315_MapZoom(uint16_t adc_value, uint16_t lower, uint16_t uppe
     return (uint8_t)(SSD1315_HEIGHT - 1 - scaled);
 }
 
-static void SSD1315_DrawScopeOverlay(uint16_t lower, uint16_t upper)
+static void SSD1315_DrawScopeOverlay(uint16_t lower, uint16_t upper, uint8_t focus_mode)
 {
     char text[9];
     char *p;
@@ -783,8 +843,16 @@ static void SSD1315_DrawScopeOverlay(uint16_t lower, uint16_t upper)
     uint32_t upper_uA;
     uint32_t div_uA;
 
-    lower_uA = SSD1315_AdcToCurrentMicroAmp(lower);
-    upper_uA = SSD1315_AdcToCurrentMicroAmp(upper);
+    if (focus_mode)
+    {
+        lower_uA = (uint32_t)lower * 100UL;
+        upper_uA = (uint32_t)upper * 100UL;
+    }
+    else
+    {
+        lower_uA = SSD1315_AdcToCurrentMicroAmp(lower);
+        upper_uA = SSD1315_AdcToCurrentMicroAmp(upper);
+    }
     div_uA = (upper_uA > lower_uA) ? ((upper_uA - lower_uA) / 8) : 0;
 
     SSD1315_FormatCurrent(text, upper_uA);
@@ -793,7 +861,7 @@ static void SSD1315_DrawScopeOverlay(uint16_t lower, uint16_t upper)
     SSD1315_FormatCurrent(text, lower_uA);
     SSD1315_DrawTextXor(0, SSD1315_HEIGHT - 5, text);
 
-    SSD1315_FormatTimebase(text);
+    SSD1315_FormatTimebase(text, focus_mode);
     SSD1315_DrawTextXor((uint8_t)(SSD1315_WIDTH - SSD1315_TextWidth(text)), 0, text);
 
     SSD1315_FormatCurrent(text, div_uA);
@@ -943,11 +1011,11 @@ static void SSD1315_FormatCurrent(char *buf, uint32_t current_uA)
     *buf = '\0';
 }
 
-static void SSD1315_FormatTimebase(char *buf)
+static void SSD1315_FormatTimebase(char *buf, uint8_t focus_mode)
 {
     uint16_t time_ms;
 
-    time_ms = SSD1315_WAVE_SAMPLE_INTERVAL_MS * 16;
+    time_ms = (focus_mode ? SSD1315_EXT_SAMPLE_INTERVAL_MS : SSD1315_WAVE_SAMPLE_INTERVAL_MS) * 16;
     if (time_ms < 1000)
     {
         buf = SSD1315_AppendU16(buf, time_ms);
@@ -1005,11 +1073,38 @@ void SSD1315_AddSample(uint16_t adc_value)
     }
 }
 
+void SSD1315_AddCurrentSample(uint16_t current_dmA)
+{
+    if (g_ssd1315_test_active)
+    {
+        return;
+    }
+
+    g_ssd1315_wave_current_dmA[g_ssd1315_current_head] = current_dmA;
+
+    g_ssd1315_current_head++;
+    if (g_ssd1315_current_head >= SSD1315_WIDTH)
+    {
+        g_ssd1315_current_head = 0;
+    }
+
+    g_ssd1315_focus_dirty = 1;
+}
+
 void SSD1315_WaveTask(void)
 {
     if (g_ssd1315_test_active)
     {
         return;
+    }
+
+    if (g_ssd1315_scope_mode == SSD1315_SCOPE_MODE_ZOOM)
+    {
+        if (!g_ssd1315_focus_dirty)
+        {
+            return;
+        }
+        g_ssd1315_focus_dirty = 0;
     }
 
     SSD1315_RenderWave();
@@ -1019,6 +1114,7 @@ void SSD1315_WaveTask(void)
 void SSD1315_ToggleScopeMode(void)
 {
     g_ssd1315_scope_mode = (g_ssd1315_scope_mode == SSD1315_SCOPE_MODE_GLOBAL) ? SSD1315_SCOPE_MODE_ZOOM : SSD1315_SCOPE_MODE_GLOBAL;
+    g_ssd1315_focus_dirty = 1;
 }
 
 BOOL SSD1315_ShowTestPattern(uint8_t pattern)
@@ -1030,6 +1126,7 @@ BOOL SSD1315_ShowTestPattern(uint8_t pattern)
 void SSD1315_ResumeWave(void)
 {
     g_ssd1315_test_active = 0;
+    g_ssd1315_focus_dirty = 1;
 }
 
 static void SSD1315_BuildTestPattern(uint8_t pattern)

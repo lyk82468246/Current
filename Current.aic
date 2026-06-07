@@ -701,10 +701,10 @@
 		<TimerCT>0</TimerCT>
 		<TimerMode>0</TimerMode>
 		<TimerAction>0</TimerAction>
-		<TimerInterval>100</TimerInterval>
+		<TimerInterval>67</TimerInterval>
 		<TimerUnit>1</TimerUnit>
-		<TimerReload>55556</TimerReload>
-		<ClockPrescale>5</ClockPrescale>
+		<TimerReload>55833</TimerReload>
+		<ClockPrescale>3</ClockPrescale>
 		<UartBaudrate>9600</UartBaudrate>
 		<CLKOPort>-1</CLKOPort>
 		<EnableInt>1</EnableInt>

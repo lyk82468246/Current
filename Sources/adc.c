@@ -35,6 +35,9 @@ static BOOL ADC_UpdateActualCurrentInternal(void);
 #if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
 static BOOL ADC_UpdateActualCurrentADS1110(void);
 #endif
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_INA250_ADS1110
+static BOOL ADC_UpdateActualCurrentINA250ADS1110(void);
+#endif
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -180,6 +183,46 @@ static uint16_t ADC_ConvertInputMicroVoltToMilliAmp(uint32_t input_uV)
     return (uint16_t)current_mA;
 }
 
+uint16_t ADC_ConvertINA250MicroVoltToMilliAmp(int32_t input_uV)
+{
+    int32_t sense_uV;
+    uint32_t current_mA;
+
+    sense_uV = input_uV - INA250_ZERO_OFFSET_UV;
+    if (sense_uV <= 0)
+    {
+        return 0;
+    }
+
+    current_mA = ((uint32_t)sense_uV + (INA250A2_UV_PER_MA / 2)) / INA250A2_UV_PER_MA;
+    if (current_mA > 9999UL)
+    {
+        current_mA = 9999UL;
+    }
+
+    return (uint16_t)current_mA;
+}
+
+uint16_t ADC_ConvertINA250MicroVoltToDeciMilliAmp(int32_t input_uV)
+{
+    int32_t sense_uV;
+    uint32_t current_dmA;
+
+    sense_uV = input_uV - INA250_ZERO_OFFSET_UV;
+    if (sense_uV <= 0)
+    {
+        return 0;
+    }
+
+    current_dmA = (((uint32_t)sense_uV * 10UL) + (INA250A2_UV_PER_MA / 2)) / INA250A2_UV_PER_MA;
+    if (current_dmA > 65535UL)
+    {
+        current_dmA = 65535UL;
+    }
+
+    return (uint16_t)current_dmA;
+}
+
 #if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
 static void ADC_UpdateVccIfIdle(void)
 {
@@ -274,9 +317,42 @@ static BOOL ADC_UpdateActualCurrentADS1110(void)
 }
 #endif
 
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_INA250_ADS1110
+static BOOL ADC_UpdateActualCurrentINA250ADS1110(void)
+{
+    int16_t raw;
+    uint8_t config;
+    int32_t input_uV;
+    uint16_t current_mA;
+    uint16_t current_dmA;
+
+    if (!ADS1110_ReadRaw(&raw, &config))
+    {
+        return FALSE;
+    }
+
+    if (!ADS1110_IsDataReady(config))
+    {
+        return FALSE;
+    }
+
+    input_uV = ADS1110_RawToMicroVolt(raw, config);
+    current_mA = ADC_ConvertINA250MicroVoltToMilliAmp(input_uV);
+    current_dmA = ADC_ConvertINA250MicroVoltToDeciMilliAmp(input_uV);
+
+    g_actual_current_adc = (raw > 0) ? (uint16_t)raw : 0;
+    SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, current_mA);
+    SSD1315_AddCurrentSample(current_dmA);
+
+    return TRUE;
+}
+#endif
+
 BOOL ADC_UpdateActualCurrentTask(void)
 {
-#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_INA250_ADS1110
+    return ADC_UpdateActualCurrentINA250ADS1110();
+#elif CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
     return ADC_UpdateActualCurrentADS1110();
 #else
     return ADC_UpdateActualCurrentInternal();

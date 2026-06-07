@@ -23,8 +23,8 @@
 #define PID_STORE_MAGIC0        'P'
 #define PID_STORE_MAGIC1        'I'
 #define PID_STORE_MAGIC2        'D'
-#define PID_STORE_MAGIC3        '3'
-#define PID_STORE_VERSION       3
+#define PID_STORE_MAGIC3        '4'
+#define PID_STORE_VERSION       4
 #define PID_STORE_KP_OFFSET     5
 #define PID_STORE_KI_OFFSET     9
 #define PID_STORE_KD_OFFSET     13
@@ -196,7 +196,11 @@ static uint16_t FF_CurrentToIdealCode(uint16_t current_mA)
     uint32_t input_unit;
     uint32_t dac_value;
 
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_INA250_ADS1110
+    input_uV = (uint32_t)current_mA * INA250A2_UV_PER_MA;
+#else
     input_uV = ((uint32_t)current_mA * CURRENT_SENSE_RES_MOHM * CURRENT_AMP_GAIN_NUM) / CURRENT_AMP_GAIN_DEN;
+#endif
     ref_unit = DAC8311_REF_MV * 10UL;
     input_unit = input_uV / 100UL;
     if (ref_unit == 0)
