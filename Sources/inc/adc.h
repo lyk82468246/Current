@@ -18,7 +18,12 @@
 #define ADC_INTERNAL_REF_MV             1190UL
 #define ADC_FULL_SCALE                  4096UL
 #define CURRENT_SENSE_RES_MOHM          100UL
-#define CURRENT_AMP_GAIN                20UL
+#define CURRENT_AMP_GAIN_NUM            101UL
+#define CURRENT_AMP_GAIN_DEN            10UL
+
+#define CURRENT_SAMPLE_SOURCE_INTERNAL  0
+#define CURRENT_SAMPLE_SOURCE_ADS1110   1
+#define CURRENT_SAMPLE_SOURCE           CURRENT_SAMPLE_SOURCE_ADS1110
 
 //<<AICUBE_USER_DEFINE_END>>
 
@@ -41,7 +46,7 @@ extern volatile uint16_t g_actual_current_adc;
 
 uint16_t ADC_ReadVccMilliVolt(void);
 uint16_t ADC_ConvertCurrentMilliAmp(uint16_t adc_value, uint16_t vcc_mV);
-void ADC_UpdateActualCurrentTask(void);
+BOOL ADC_UpdateActualCurrentTask(void);
 //<<AICUBE_USER_EXTERNAL_DECLARE_END>>
 
 

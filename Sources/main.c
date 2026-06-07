@@ -67,8 +67,10 @@ void main(void)
             g_actual_current_update_pending = 0;
             EnableGlobalInt();
 
-            ADC_UpdateActualCurrentTask();
-            PID_ControlTask();
+            if (ADC_UpdateActualCurrentTask())
+            {
+                PID_ControlTask();
+            }
         }
 
         if (g_uart_telemetry_pending)

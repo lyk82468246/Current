@@ -91,6 +91,7 @@ void I2C_Init(void)
     //<<AICUBE_USER_I2C_INITIAL_BEGIN>>
     // 在此添加用户初始化代码  
     SSD1315_Init();
+    ADS1110_Init();
     //<<AICUBE_USER_I2C_INITIAL_END>>
 }
 
@@ -290,6 +291,7 @@ static BOOL ADS1110_SendAddress(uint8_t addr)
 
 BOOL ADS1110_WriteConfig(uint8_t config)
 {
+    DMA_I2C_DisableDMA();
     while (I2C_CheckMasterBusy());
     I2C_ClearMasterFlag();
 
@@ -329,6 +331,7 @@ BOOL ADS1110_ReadRaw(int16_t *raw, uint8_t *config)
     if (raw == NULL)
         return FALSE;
 
+    DMA_I2C_DisableDMA();
     while (I2C_CheckMasterBusy());
     I2C_ClearMasterFlag();
 
@@ -895,16 +898,17 @@ static uint32_t SSD1315_AdcToCurrentMicroAmp(uint16_t adc_value)
         adc_value = 4095;
     }
 
-    if ((CURRENT_SENSE_RES_MOHM == 0) || (CURRENT_AMP_GAIN == 0))
+    if ((CURRENT_SENSE_RES_MOHM == 0) || (CURRENT_AMP_GAIN_NUM == 0))
     {
         return 0;
     }
 
     vcc_mV = g_adc_vcc_mV ? g_adc_vcc_mV : 5000;
     input_uV = ((uint32_t)adc_value * vcc_mV * 1000UL) / ADC_FULL_SCALE;
-    denom = (uint32_t)CURRENT_SENSE_RES_MOHM * CURRENT_AMP_GAIN;
+    denom = (uint32_t)CURRENT_SENSE_RES_MOHM * CURRENT_AMP_GAIN_NUM;
 
-    return ((input_uV / denom) * 1000UL) + (((input_uV % denom) * 1000UL) / denom);
+    return ((input_uV / denom) * 1000UL * CURRENT_AMP_GAIN_DEN) +
+           (((input_uV % denom) * 1000UL * CURRENT_AMP_GAIN_DEN) / denom);
 }
 
 static void SSD1315_FormatCurrent(char *buf, uint32_t current_uA)

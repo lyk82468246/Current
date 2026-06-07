@@ -24,6 +24,17 @@ volatile uint16_t g_adc_vcc_mV = 0;
 volatile uint16_t g_actual_current_adc = 0;
 static volatile uint8_t g_adc_wave_sampling = 0;
 static volatile uint8_t g_adc_user_convert_busy = 0;
+
+static uint16_t ADC_ConvertInputMicroVoltToMilliAmp(uint32_t input_uV);
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
+static void ADC_UpdateVccIfIdle(void);
+#endif
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_INTERNAL
+static BOOL ADC_UpdateActualCurrentInternal(void);
+#endif
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
+static BOOL ADC_UpdateActualCurrentADS1110(void);
+#endif
 //<<AICUBE_USER_GLOBAL_DEFINE_END>>
 
 
@@ -138,15 +149,28 @@ uint16_t ADC_ReadVccMilliVolt(void)
 uint16_t ADC_ConvertCurrentMilliAmp(uint16_t adc_value, uint16_t vcc_mV)
 {
     uint32_t input_uV;
-    uint32_t current_mA;
 
-    if ((CURRENT_SENSE_RES_MOHM == 0) || (CURRENT_AMP_GAIN == 0))
+    if ((CURRENT_SENSE_RES_MOHM == 0) || (CURRENT_AMP_GAIN_NUM == 0))
     {
         return 0;
     }
 
     input_uV = ((uint32_t)adc_value * vcc_mV * 1000UL) / ADC_FULL_SCALE;
-    current_mA = input_uV / (CURRENT_AMP_GAIN * CURRENT_SENSE_RES_MOHM);
+    return ADC_ConvertInputMicroVoltToMilliAmp(input_uV);
+}
+
+static uint16_t ADC_ConvertInputMicroVoltToMilliAmp(uint32_t input_uV)
+{
+    uint32_t denom;
+    uint32_t current_mA;
+
+    if ((CURRENT_SENSE_RES_MOHM == 0) || (CURRENT_AMP_GAIN_NUM == 0))
+    {
+        return 0;
+    }
+
+    denom = CURRENT_SENSE_RES_MOHM * CURRENT_AMP_GAIN_NUM;
+    current_mA = ((input_uV * CURRENT_AMP_GAIN_DEN) + (denom / 2)) / denom;
 
     if (current_mA > 9999UL)
     {
@@ -156,7 +180,28 @@ uint16_t ADC_ConvertCurrentMilliAmp(uint16_t adc_value, uint16_t vcc_mV)
     return (uint16_t)current_mA;
 }
 
-void ADC_UpdateActualCurrentTask(void)
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
+static void ADC_UpdateVccIfIdle(void)
+{
+    uint16_t vcc_mV;
+
+    if (g_adc_wave_sampling || g_adc_user_convert_busy)
+    {
+        return;
+    }
+
+    g_adc_user_convert_busy = 1;
+    vcc_mV = ADC_ReadVccMilliVolt();
+    if (vcc_mV)
+    {
+        g_adc_vcc_mV = vcc_mV;
+    }
+    g_adc_user_convert_busy = 0;
+}
+#endif
+
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_INTERNAL
+static BOOL ADC_UpdateActualCurrentInternal(void)
 {
     uint16_t vcc_mV;
     uint16_t adc_value;
@@ -164,7 +209,7 @@ void ADC_UpdateActualCurrentTask(void)
 
     if (g_adc_wave_sampling || g_adc_user_convert_busy)
     {
-        return;
+        return FALSE;
     }
     g_adc_user_convert_busy = 1;
 
@@ -172,7 +217,7 @@ void ADC_UpdateActualCurrentTask(void)
     if (vcc_mV == 0)
     {
         g_adc_user_convert_busy = 0;
-        return;
+        return FALSE;
     }
 
     adc_value = ADC_Convert(ADC_CURRENT_CHANNEL);
@@ -182,6 +227,60 @@ void ADC_UpdateActualCurrentTask(void)
     g_actual_current_adc = adc_value;
     SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, current_mA);
     g_adc_user_convert_busy = 0;
+
+    return TRUE;
+}
+#endif
+
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
+static BOOL ADC_UpdateActualCurrentADS1110(void)
+{
+    int16_t raw;
+    uint8_t config;
+    int32_t input_uV;
+    uint16_t current_mA;
+
+    ADC_UpdateVccIfIdle();
+
+    if (!ADS1110_ReadRaw(&raw, &config))
+    {
+        return FALSE;
+    }
+
+    if (!ADS1110_IsDataReady(config))
+    {
+        return FALSE;
+    }
+
+    if (raw <= 0)
+    {
+        input_uV = 0;
+        g_actual_current_adc = 0;
+    }
+    else
+    {
+        input_uV = ADS1110_RawToMicroVolt(raw, config);
+        if (input_uV < 0)
+        {
+            input_uV = 0;
+        }
+        g_actual_current_adc = (uint16_t)raw;
+    }
+
+    current_mA = ADC_ConvertInputMicroVoltToMilliAmp((uint32_t)input_uV);
+    SEG_UpdateMemory(SEG_GROUP_ACTUAL_CURRENT, current_mA);
+
+    return TRUE;
+}
+#endif
+
+BOOL ADC_UpdateActualCurrentTask(void)
+{
+#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_ADS1110
+    return ADC_UpdateActualCurrentADS1110();
+#else
+    return ADC_UpdateActualCurrentInternal();
+#endif
 }
 
 //<<AICUBE_USER_FUNCTION_IMPLEMENT_END>>
