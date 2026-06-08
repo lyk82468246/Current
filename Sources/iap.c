@@ -23,8 +23,8 @@
 #define PID_STORE_MAGIC0        'P'
 #define PID_STORE_MAGIC1        'I'
 #define PID_STORE_MAGIC2        'D'
-#define PID_STORE_MAGIC3        '4'
-#define PID_STORE_VERSION       4
+#define PID_STORE_MAGIC3        '5'
+#define PID_STORE_VERSION       5
 #define PID_STORE_KP_OFFSET     5
 #define PID_STORE_KI_OFFSET     9
 #define PID_STORE_KD_OFFSET     13
@@ -33,6 +33,10 @@
 #define PID_STORE_PRO_OFFSET    (PID_STORE_BASIC_OFFSET + (FF_BASIC_POINTS * 2))
 #define PID_STORE_CHECK_OFFSET  (PID_STORE_PRO_OFFSET + (FF_PRO_POINTS * 2))
 #define PID_STORE_SIZE          (PID_STORE_CHECK_OFFSET + 1)
+#define FF_UV_TO_DAC_CODE(input_uV) \
+    ((uint16_t)(((((uint32_t)(input_uV) / 100UL) * (DAC8311_MAX_CODE + 1UL)) + ((DAC8311_REF_MV * 10UL) / 2)) / (DAC8311_REF_MV * 10UL)))
+#define FF_SHUNT_IDEAL_CODE(current_mA) \
+    FF_UV_TO_DAC_CODE((uint32_t)(current_mA) * CURRENT_SENSE_RES_MOHM)
 
 volatile int32_t g_pid_kp = PID_DEFAULT_KP;
 volatile int32_t g_pid_ki = PID_DEFAULT_KI;
@@ -47,6 +51,26 @@ static int32_t g_pid_integral = 0;
 static int32_t g_pid_last_error = 0;
 static uint16_t xdata g_ff_basic_table[FF_BASIC_POINTS];
 static uint16_t xdata g_ff_pro_table[FF_PRO_POINTS];
+static uint16_t code g_ff_default_basic_table[FF_BASIC_POINTS] =
+{
+    FF_SHUNT_IDEAL_CODE(0), FF_SHUNT_IDEAL_CODE(50), FF_SHUNT_IDEAL_CODE(100),
+    FF_SHUNT_IDEAL_CODE(150), FF_SHUNT_IDEAL_CODE(200), FF_SHUNT_IDEAL_CODE(250),
+    FF_SHUNT_IDEAL_CODE(300), FF_SHUNT_IDEAL_CODE(350), FF_SHUNT_IDEAL_CODE(400),
+    FF_SHUNT_IDEAL_CODE(450), FF_SHUNT_IDEAL_CODE(500), FF_SHUNT_IDEAL_CODE(550),
+    FF_SHUNT_IDEAL_CODE(600), FF_SHUNT_IDEAL_CODE(650), FF_SHUNT_IDEAL_CODE(700),
+    FF_SHUNT_IDEAL_CODE(750), FF_SHUNT_IDEAL_CODE(800), FF_SHUNT_IDEAL_CODE(850),
+    FF_SHUNT_IDEAL_CODE(900), FF_SHUNT_IDEAL_CODE(950), FF_SHUNT_IDEAL_CODE(1000)
+};
+static uint16_t code g_ff_default_pro_table[FF_PRO_POINTS] =
+{
+    FF_SHUNT_IDEAL_CODE(0), FF_SHUNT_IDEAL_CODE(100), FF_SHUNT_IDEAL_CODE(200),
+    FF_SHUNT_IDEAL_CODE(300), FF_SHUNT_IDEAL_CODE(400), FF_SHUNT_IDEAL_CODE(500),
+    FF_SHUNT_IDEAL_CODE(600), FF_SHUNT_IDEAL_CODE(700), FF_SHUNT_IDEAL_CODE(800),
+    FF_SHUNT_IDEAL_CODE(900), FF_SHUNT_IDEAL_CODE(1000), FF_SHUNT_IDEAL_CODE(1100),
+    FF_SHUNT_IDEAL_CODE(1200), FF_SHUNT_IDEAL_CODE(1300), FF_SHUNT_IDEAL_CODE(1400),
+    FF_SHUNT_IDEAL_CODE(1500), FF_SHUNT_IDEAL_CODE(1600), FF_SHUNT_IDEAL_CODE(1700),
+    FF_SHUNT_IDEAL_CODE(1800), FF_SHUNT_IDEAL_CODE(1900), FF_SHUNT_IDEAL_CODE(2000)
+};
 static uint8_t g_setpoint_valid = 0;
 static uint8_t g_last_setpoint_mode = 0;
 static uint16_t g_last_setpoint_mA = 0;
@@ -57,8 +81,7 @@ static void PID_WriteWord(uint32_t addr, uint16_t value);
 static uint16_t PID_ReadWord(uint32_t addr);
 static uint8_t PID_ReadStoreByte(uint8_t offset);
 static uint8_t PID_CalcChecksum(void);
-static void FF_InitIdealTables(void);
-static uint16_t FF_CurrentToIdealCode(uint16_t current_mA);
+static void FF_LoadDefaultTables(void);
 static uint8_t FF_GetBasicIndex(uint16_t current_mA);
 static uint8_t FF_GetProIndex(uint16_t current_mA);
 static uint16_t FF_GetCode(uint8_t mode, uint16_t current_mA);
@@ -189,48 +212,18 @@ static uint8_t PID_CalcChecksum(void)
     return sum;
 }
 
-static uint16_t FF_CurrentToIdealCode(uint16_t current_mA)
-{
-    uint32_t input_uV;
-    uint32_t ref_unit;
-    uint32_t input_unit;
-    uint32_t dac_value;
-
-#if CURRENT_SAMPLE_SOURCE == CURRENT_SAMPLE_SOURCE_INA250_ADS1110
-    input_uV = (uint32_t)current_mA * INA250A2_UV_PER_MA;
-#else
-    input_uV = ((uint32_t)current_mA * CURRENT_SENSE_RES_MOHM * CURRENT_AMP_GAIN_NUM) / CURRENT_AMP_GAIN_DEN;
-#endif
-    ref_unit = DAC8311_REF_MV * 10UL;
-    input_unit = input_uV / 100UL;
-    if (ref_unit == 0)
-    {
-        return 0;
-    }
-
-    dac_value = ((input_unit * (DAC8311_MAX_CODE + 1UL)) + (ref_unit / 2)) / ref_unit;
-    if (dac_value > DAC8311_MAX_CODE)
-    {
-        dac_value = DAC8311_MAX_CODE;
-    }
-
-    return (uint16_t)dac_value;
-}
-
-static void FF_InitIdealTables(void)
+static void FF_LoadDefaultTables(void)
 {
     uint8_t i;
 
-    g_ff_basic_table[0] = FF_CurrentToIdealCode(0);
-    for (i = 1; i < FF_BASIC_POINTS; i++)
+    for (i = 0; i < FF_BASIC_POINTS; i++)
     {
-        g_ff_basic_table[i] = FF_CurrentToIdealCode((uint16_t)(i * 50));
+        g_ff_basic_table[i] = g_ff_default_basic_table[i];
     }
 
-    g_ff_pro_table[0] = FF_CurrentToIdealCode(0);
-    for (i = 1; i < FF_PRO_POINTS; i++)
+    for (i = 0; i < FF_PRO_POINTS; i++)
     {
-        g_ff_pro_table[i] = FF_CurrentToIdealCode((uint16_t)(100 + ((i - 1) * 100)));
+        g_ff_pro_table[i] = g_ff_default_pro_table[i];
     }
 }
 
@@ -333,7 +326,7 @@ void PID_LoadDefault(void)
     g_pid_ki = PID_DEFAULT_KI;
     g_pid_kd = PID_DEFAULT_KD;
     g_pid_enabled = 1;
-    FF_InitIdealTables();
+    FF_LoadDefaultTables();
     PID_InvalidateSetpoint();
     PID_ResetState();
 }

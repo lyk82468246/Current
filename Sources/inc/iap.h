@@ -19,7 +19,7 @@
 #define PID_INTEGRAL_LIMIT              100000L
 #define PID_IAP_ADDRESS                 IAP_OFFSET
 
-#define DAC8311_REF_MV                  5000UL
+#define DAC8311_REF_MV                  2000UL
 #define FF_BASIC_POINTS                 21
 #define FF_PRO_POINTS                   21
 //<<AICUBE_USER_DEFINE_END>>
